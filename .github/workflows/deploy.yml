@@ -1,0 +1,48 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'BackEnd/**'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  SERVICE_NAME: plateit-backend
+  IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/plateit-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker --quiet
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t $IMAGE_NAME ./BackEnd/Agent
+          docker push $IMAGE_NAME
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE_NAME \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }},SERP_API_KEY=${{ secrets.SERP_API_KEY }},DATABASE_URL=${{ secrets.DATABASE_URL }},SPOONACULAR_API_KEY=${{ secrets.SPOONACULAR_API_KEY }},OPEN_API_KEY=${{ secrets.OPEN_API_KEY }},YT_API_KEY=${{ secrets.YT_API_KEY }},PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}"

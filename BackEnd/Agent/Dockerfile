@@ -18,5 +18,5 @@ COPY . .
 EXPOSE 8080
 
 # Define the command to run the application
-# Cloud Run expects the app to listen on the environment variable PORT (default 8080)
-CMD ["uvicorn", "agent_server:app", "--host", "0.0.0.0", "--port", "8080"]
+# We use a shell-form CMD to allow environment variable expansion for $PORT
+CMD uvicorn agent_server:app --host 0.0.0.0 --port ${PORT:-8080}
