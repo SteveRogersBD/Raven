@@ -79,6 +79,13 @@ public class CookingModeActivity extends AppCompatActivity {
                             retrofit2.Response<com.example.plateit.responses.CookingSession> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             sessionId = response.body().getId();
+                            android.util.Log.d("PlateIt", "Cooking Session Started: " + sessionId);
+                            android.widget.Toast
+                                    .makeText(com.example.plateit.CookingModeActivity.this,
+                                            "Session Started (" + sessionId + ")", android.widget.Toast.LENGTH_SHORT)
+                                    .show();
+                        } else {
+                            android.util.Log.e("PlateIt", "Session Start Failed: " + response.code());
                         }
                     }
 

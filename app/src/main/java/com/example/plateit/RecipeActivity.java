@@ -80,9 +80,12 @@ public class RecipeActivity extends AppCompatActivity {
                             if (response.isSuccessful() && response.body() != null) {
                                 cookbookId[0] = response.body().getId();
                                 btnSave.setText("Saved!");
+                                android.util.Log.d("PlateIt", "Recipe saved successfully. ID: " + cookbookId[0]);
                                 android.widget.Toast.makeText(RecipeActivity.this, "Recipe saved to cookbook!",
                                         android.widget.Toast.LENGTH_SHORT).show();
                             } else {
+                                android.util.Log.e("PlateIt",
+                                        "Save failed: " + response.code() + " " + response.message());
                                 btnSave.setEnabled(true);
                                 btnSave.setText("Save to My Cookbook");
                                 android.widget.Toast.makeText(RecipeActivity.this, "Failed to save",
@@ -93,6 +96,7 @@ public class RecipeActivity extends AppCompatActivity {
                         @Override
                         public void onFailure(retrofit2.Call<com.example.plateit.responses.CookbookEntry> call,
                                 Throwable t) {
+                            android.util.Log.e("PlateIt", "Save Error: " + t.getMessage(), t);
                             btnSave.setEnabled(true);
                             btnSave.setText("Save to My Cookbook");
                             android.widget.Toast.makeText(RecipeActivity.this, "Error: " + t.getMessage(),

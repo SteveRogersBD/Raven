@@ -700,6 +700,7 @@ def add_to_cookbook(entry: CookbookEntryCreate, session: Session = Depends(get_s
     session.add(new_entry)
     session.commit()
     session.refresh(new_entry)
+    print(f"DEBUG: Added to cookbook: {new_entry.title} (ID: {new_entry.id})")
     return new_entry
 
 @app.get("/cookbook/{user_id}")
@@ -714,6 +715,7 @@ def delete_from_cookbook(recipe_id: int, session: Session = Depends(get_session)
         raise HTTPException(status_code=404, detail="Recipe not found")
     session.delete(recipe)
     session.commit()
+    print(f"DEBUG: Deleted cookbook entry: {recipe_id}")
     return {"message": "Recipe deleted"}
 
 # --- Cooking Session Endpoints ---
@@ -750,6 +752,7 @@ def start_cooking_session(data: CookingSessionCreate, session: Session = Depends
     session.add(new_session)
     session.commit()
     session.refresh(new_session)
+    print(f"DEBUG: Started new cooking session: ID={new_session.id}, User={new_session.user_id}, CookbookID={new_session.cookbook_id}")
     return new_session
 
 class CookingProgressUpdate(BaseModel):
@@ -770,6 +773,7 @@ def update_cooking_progress(data: CookingProgressUpdate, session: Session = Depe
     session.add(sess_obj)
     session.commit()
     session.refresh(sess_obj)
+    print(f"DEBUG: Updated session {data.session_id} -> Step: {data.current_step_index}, Finished: {data.is_finished}")
     return sess_obj
 
 @app.get("/cooking/active/{user_id}")

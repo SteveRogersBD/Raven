@@ -80,6 +80,7 @@ public class DashboardFragment extends Fragment {
             public void onResponse(Call<List<CookbookEntry>> call, Response<List<CookbookEntry>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<CookbookEntry> recipes = response.body();
+                    android.util.Log.d("PlateIt", "Cookbook fetched: " + recipes.size() + " items");
                     if (recipes.isEmpty()) {
                         tvEmpty.setVisibility(View.VISIBLE);
                         rvCookbook.setVisibility(View.GONE);
@@ -88,11 +89,14 @@ public class DashboardFragment extends Fragment {
                         rvCookbook.setVisibility(View.VISIBLE);
                         adapter.updateData(recipes);
                     }
+                } else {
+                    android.util.Log.e("PlateIt", "Fetch failed: " + response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<List<CookbookEntry>> call, Throwable t) {
+                android.util.Log.e("PlateIt", "Fetch Error: " + t.getMessage(), t);
                 Toast.makeText(getContext(), "Failed to load cookbook", Toast.LENGTH_SHORT).show();
             }
         });
