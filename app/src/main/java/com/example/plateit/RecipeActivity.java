@@ -36,25 +36,92 @@ public class RecipeActivity extends AppCompatActivity {
             android.widget.Toast.makeText(this, "Error parsing recipe JSON", android.widget.Toast.LENGTH_LONG).show();
         }
 
-        // Buttons
+        // Initialize SessionManager
+        com.example.plateit.utils.SessionManager sessionManager = new com.example.plateit.utils.SessionManager(this);
+
+        // Retrieve existing cookbook_id from intent if available
+        int intentCookbookId = getIntent().getIntExtra("cookbook_id", -1);
+        final Integer[] cookbookId = { intentCookbookId != -1 ? intentCookbookId : null };
+
+        // Save Button Logic
+        android.widget.Button btnSave = findViewById(R.id.btnSaveCookbook);
+        if (cookbookId[0] != null) {
+            btnSave.setText("Saved to Cookbook");
+            btnSave.setEnabled(false);
+        }
+
         final com.example.plateit.responses.RecipeResponse finalRecipe = recipe;
+
+        btnSave.setOnClickListener(v -> {
+            if (finalRecipe == null)
+                return;
+            String userId = sessionManager.getUserId();
+            if (userId == null) {
+                android.widget.Toast.makeText(this, "Please log in to save recipes", android.widget.Toast.LENGTH_SHORT)
+                        .show();
+                return;
+            }
+
+            btnSave.setEnabled(false);
+            btnSave.setText("Saving...");
+
+            com.example.plateit.requests.CookbookEntryCreate request = new com.example.plateit.requests.CookbookEntryCreate(
+                    userId,
+                    finalRecipe.getName(),
+                    finalRecipe, // Pass the whole object as recipe_data
+                    finalRecipe.getSourceUrl(),
+                    finalRecipe.getSourceImage());
+
+            com.example.plateit.api.RetrofitClient.getAgentService().addToCookbook(request)
+                    .enqueue(new retrofit2.Callback<com.example.plateit.responses.CookbookEntry>() {
+                        @Override
+                        public void onResponse(retrofit2.Call<com.example.plateit.responses.CookbookEntry> call,
+                                retrofit2.Response<com.example.plateit.responses.CookbookEntry> response) {
+                            if (response.isSuccessful() && response.body() != null) {
+                                cookbookId[0] = response.body().getId();
+                                btnSave.setText("Saved!");
+                                android.widget.Toast.makeText(RecipeActivity.this, "Recipe saved to cookbook!",
+                                        android.widget.Toast.LENGTH_SHORT).show();
+                            } else {
+                                btnSave.setEnabled(true);
+                                btnSave.setText("Save to My Cookbook");
+                                android.widget.Toast.makeText(RecipeActivity.this, "Failed to save",
+                                        android.widget.Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(retrofit2.Call<com.example.plateit.responses.CookbookEntry> call,
+                                Throwable t) {
+                            btnSave.setEnabled(true);
+                            btnSave.setText("Save to My Cookbook");
+                            android.widget.Toast.makeText(RecipeActivity.this, "Error: " + t.getMessage(),
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        });
+
         findViewById(R.id.btnStartCooking).setOnClickListener(v -> {
             if (finalRecipe != null && finalRecipe.getSteps() != null) {
                 android.content.Intent intent = new android.content.Intent(this, CookingModeActivity.class);
-                // intent.putStringArrayListExtra("steps_list", new
-                // java.util.ArrayList<>(recipe.getSteps())); // Removed - using object passing
 
                 // Convert Response to Model for Intent passing
                 com.example.plateit.models.Recipe recipeModel = new com.example.plateit.models.Recipe(
                         finalRecipe.getName(),
-                        finalRecipe.getSteps(), // Now List<RecipeStep>
+                        finalRecipe.getSteps(),
                         finalRecipe.getIngredients(),
                         finalRecipe.getSourceUrl(),
-                        finalRecipe.getSourceImage());
+                        finalRecipe.getSourceImage(),
+                        finalRecipe.getTotalTime());
 
                 // Pass as JSON
                 String jsonModel = new com.google.gson.Gson().toJson(recipeModel);
                 intent.putExtra("recipe_json", jsonModel);
+
+                // Pass cookbook ID for session tracking
+                if (cookbookId[0] != null) {
+                    intent.putExtra("cookbook_id", cookbookId[0]);
+                }
 
                 startActivity(intent);
             } else {

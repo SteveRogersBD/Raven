@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/plain_white">
+    android:background="@drawable/grad_sunrise">
     
     <ImageView
         android:id="@+id/imgLogoSmall"
@@ -36,7 +36,7 @@
         android:layout_marginTop="60dp"
         android:fontFamily="sans-serif-bold"
         android:text="What's cooking?"
-        android:textColor="@color/tech_black"
+        android:textColor="@color/chef_orange"
         android:textSize="32sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -61,9 +61,9 @@
         android:layout_height="60dp"
         android:layout_marginHorizontal="24dp"
         android:layout_marginTop="32dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="6dp"
-        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="12dp"
+        app:cardBackgroundColor="@color/chef_surface"
         app:layout_constraintTop_toBottomOf="@id/tvHeroSubtitle">
 
         <LinearLayout

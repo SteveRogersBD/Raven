@@ -9,6 +9,7 @@ public class Recipe implements Serializable {
     private List<Ingredient> ingredients;
     private String source;
     private String source_image;
+    private String total_time;
 
     public Recipe(String name, List<RecipeStep> steps, List<Ingredient> ingredients) {
         this.name = name;
@@ -32,6 +33,16 @@ public class Recipe implements Serializable {
         this.source_image = source_image;
     }
 
+    public Recipe(String name, List<RecipeStep> steps, List<Ingredient> ingredients, String source,
+            String source_image, String total_time) {
+        this.name = name;
+        this.steps = steps;
+        this.ingredients = ingredients;
+        this.source = source;
+        this.source_image = source_image;
+        this.total_time = total_time;
+    }
+
     public String getName() {
         return name;
     }
@@ -50,5 +61,9 @@ public class Recipe implements Serializable {
 
     public String getSourceImage() {
         return source_image;
+    }
+
+    public String getTotalTime() {
+        return total_time;
     }
 }

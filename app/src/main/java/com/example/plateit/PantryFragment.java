@@ -47,6 +47,7 @@ public class PantryFragment extends Fragment {
     private PantryAdapter adapter;
     private List<PantryItem> pantryTypeList = new ArrayList<>();
     private com.example.plateit.utils.SessionManager sessionManager;
+    private com.example.plateit.utils.LoadingDialog loadingDialog;
 
     private static final int CAMERA_REQUEST_CODE = 202;
 
@@ -65,6 +66,7 @@ public class PantryFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        loadingDialog = new com.example.plateit.utils.LoadingDialog(getActivity());
         rvPantryItems = view.findViewById(R.id.rvPantryItems);
         progressBar = view.findViewById(R.id.progressBar);
         tvEmpty = view.findViewById(R.id.tvEmpty);
@@ -122,7 +124,7 @@ public class PantryFragment extends Fragment {
     }
 
     private void findRecipesByIngredients(List<String> ingredients) {
-        progressBar.setVisibility(View.VISIBLE);
+        loadingDialog.startLoadingDialog("Finding Recipes...");
         com.example.plateit.requests.IngredientSearchRequest request = new com.example.plateit.requests.IngredientSearchRequest(
                 ingredients, 10);
 
@@ -131,7 +133,7 @@ public class PantryFragment extends Fragment {
                     @Override
                     public void onResponse(Call<List<com.example.plateit.responses.RecipeSummary>> call,
                             Response<List<com.example.plateit.responses.RecipeSummary>> response) {
-                        progressBar.setVisibility(View.GONE);
+                        loadingDialog.dismissDialog();
                         if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                             showRecipeResultsDialog(response.body());
                         } else {
@@ -141,7 +143,7 @@ public class PantryFragment extends Fragment {
 
                     @Override
                     public void onFailure(Call<List<com.example.plateit.responses.RecipeSummary>> call, Throwable t) {
-                        progressBar.setVisibility(View.GONE);
+                        loadingDialog.dismissDialog();
                         Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -173,15 +175,14 @@ public class PantryFragment extends Fragment {
     }
 
     private void fetchFullRecipeDetails(int recipeId) {
-        progressBar.setVisibility(View.VISIBLE);
-        Toast.makeText(getContext(), "Loading recipe details...", Toast.LENGTH_SHORT).show();
+        loadingDialog.startLoadingDialog("Loading Details...");
 
         RetrofitClient.getAgentService().getRecipeDetails(recipeId)
                 .enqueue(new Callback<com.example.plateit.responses.RecipeResponse>() {
                     @Override
                     public void onResponse(Call<com.example.plateit.responses.RecipeResponse> call,
                             Response<com.example.plateit.responses.RecipeResponse> response) {
-                        progressBar.setVisibility(View.GONE);
+                        loadingDialog.dismissDialog();
                         if (response.isSuccessful() && response.body() != null) {
                             // Navigate to RecipeActivity
                             Intent intent = new Intent(getContext(), RecipeActivity.class);
@@ -196,7 +197,7 @@ public class PantryFragment extends Fragment {
 
                     @Override
                     public void onFailure(Call<com.example.plateit.responses.RecipeResponse> call, Throwable t) {
-                        progressBar.setVisibility(View.GONE);
+                        loadingDialog.dismissDialog();
                         Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -301,15 +302,14 @@ public class PantryFragment extends Fragment {
     }
 
     private void fetchImageAndSave(String name, String amount) {
-        progressBar.setVisibility(View.VISIBLE);
-        Toast.makeText(getContext(), "Fetching image...", Toast.LENGTH_SHORT).show();
+        loadingDialog.startLoadingDialog("Fetching Image...");
 
         RetrofitClient.getAgentService().getIngredientImage(name)
                 .enqueue(new Callback<com.example.plateit.responses.IngredientImageResponse>() {
                     @Override
                     public void onResponse(Call<com.example.plateit.responses.IngredientImageResponse> call,
                             Response<com.example.plateit.responses.IngredientImageResponse> response) {
-                        progressBar.setVisibility(View.GONE);
+                        loadingDialog.dismissDialog();
                         String imageUrl = null;
                         if (response.isSuccessful() && response.body() != null) {
                             imageUrl = response.body().getImageUrl();
@@ -320,7 +320,7 @@ public class PantryFragment extends Fragment {
                     @Override
                     public void onFailure(Call<com.example.plateit.responses.IngredientImageResponse> call,
                             Throwable t) {
-                        progressBar.setVisibility(View.GONE);
+                        loadingDialog.dismissDialog();
                         saveItem(name, amount, null); // Save without image on failure
                     }
                 });
@@ -385,8 +385,7 @@ public class PantryFragment extends Fragment {
     }
 
     private void processImage(Bitmap bitmap) {
-        progressBar.setVisibility(View.VISIBLE);
-        Toast.makeText(getContext(), "Analyzing pantry image...", Toast.LENGTH_SHORT).show();
+        loadingDialog.startLoadingDialog("Analyzing Pantry...");
 
         try {
             // 1. Save Bitmap to File
@@ -411,7 +410,7 @@ public class PantryFragment extends Fragment {
             RetrofitClient.getAgentService().scanPantryImage(body).enqueue(new Callback<PantryScanResponse>() {
                 @Override
                 public void onResponse(Call<PantryScanResponse> call, Response<PantryScanResponse> response) {
-                    progressBar.setVisibility(View.GONE);
+                    loadingDialog.dismissDialog();
                     if (response.isSuccessful() && response.body() != null) {
                         List<PantryScanResponse.PantryItem> scannedItems = response.body().getItems();
                         if (scannedItems != null && !scannedItems.isEmpty()) {
@@ -431,14 +430,14 @@ public class PantryFragment extends Fragment {
 
                 @Override
                 public void onFailure(Call<PantryScanResponse> call, Throwable t) {
-                    progressBar.setVisibility(View.GONE);
+                    loadingDialog.dismissDialog();
                     Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     file.delete();
                 }
             });
 
         } catch (Exception e) {
-            progressBar.setVisibility(View.GONE);
+            loadingDialog.dismissDialog();
             e.printStackTrace();
             Toast.makeText(getContext(), "Error processing image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }

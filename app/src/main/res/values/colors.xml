@@ -7,10 +7,25 @@
     <color name="chef_orange">#FF6D00</color>       <!-- Primary Action (Warm/Zesty) -->
     <color name="chef_orange_light">#FFE0B2</color> <!-- Secondary Highlights -->
     <color name="chef_dark">#212121</color>         <!-- Text / Contrast -->
-    <color name="chef_background">#F5F5F7</color>   <!-- Modern Off-White BG -->
+    <color name="chef_background">#F8F9FA</color>   <!-- Modern Off-White BG -->
     <color name="chef_surface">#FFFFFF</color>      <!-- Card Surfaces -->
     <color name="chef_green">#4CAF50</color>        <!-- Success / Freshness -->
     <color name="chef_red">#E53935</color>          <!-- Alert / Heat -->
+    
+    <!-- New Professional Palette -->
+    <color name="culinary_red">#D32F2F</color>      <!-- Deep, rich red -->
+    <color name="fresh_green">#388E3C</color>       <!-- Natural basil green -->
+    <color name="warm_yellow">#FFCA28</color>       <!-- Yolk / Butter -->
+    <color name="slate_blue">#455A64</color>        <!-- Modern neutral dark -->
+    
+    <color name="neutral_100">#F5F5F5</color>
+    <color name="neutral_200">#EEEEEE</color>
+    <color name="neutral_900">#212121</color>
+
+    <color name="gradient_start_fire">#FF5722</color>
+    <color name="gradient_end_fire">#FF8A65</color>
+    <color name="gradient_start_fresh">#43A047</color>
+    <color name="gradient_end_fresh">#81C784</color>
     
     <!-- Legacy Mappings for Compatibility -->
     <color name="banana_yellow">@color/chef_orange</color>

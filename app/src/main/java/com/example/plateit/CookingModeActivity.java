@@ -61,14 +61,66 @@ public class CookingModeActivity extends AppCompatActivity {
     // Dynamic UI
     private androidx.recyclerview.widget.RecyclerView rvRecipeList, rvIngredientList, rvVideoList;
 
+    // Session
+    private int sessionId = -1;
+    private com.example.plateit.utils.SessionManager sessionManager;
+
+    private void startCookingSession(int cookbookId) {
+        String userId = sessionManager.getUserId();
+        if (userId == null)
+            return;
+
+        com.example.plateit.requests.CookingSessionCreate req = new com.example.plateit.requests.CookingSessionCreate(
+                userId, cookbookId);
+        com.example.plateit.api.RetrofitClient.getAgentService().startCookingSession(req)
+                .enqueue(new retrofit2.Callback<com.example.plateit.responses.CookingSession>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.plateit.responses.CookingSession> call,
+                            retrofit2.Response<com.example.plateit.responses.CookingSession> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            sessionId = response.body().getId();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.plateit.responses.CookingSession> call,
+                            Throwable t) {
+                        // Fail silently
+                    }
+                });
+    }
+
+    private void updateCookingSession(int stepIndex, boolean isFinished) {
+        com.example.plateit.requests.CookingProgressUpdate req = new com.example.plateit.requests.CookingProgressUpdate(
+                sessionId, stepIndex, isFinished);
+        com.example.plateit.api.RetrofitClient.getAgentService().updateCookingProgress(req)
+                .enqueue(new retrofit2.Callback<com.example.plateit.responses.CookingSession>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.plateit.responses.CookingSession> call,
+                            retrofit2.Response<com.example.plateit.responses.CookingSession> response) {
+                        // Success
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.plateit.responses.CookingSession> call,
+                            Throwable t) {
+                        // Fail silently
+                    }
+                });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // androidx.activity.EdgeToEdge.enable(this); // Disabled to restore standard
         // bars
         setContentView(R.layout.activity_cooking_mode);
-        // applyWindowInsets(); // Also disable manual insets handling since
-        // fitSystemWindows handles it now or standard behavior applies
+
+        sessionManager = new com.example.plateit.utils.SessionManager(this);
+        int cookbookId = getIntent().getIntExtra("cookbook_id", -1);
+        if (cookbookId != -1) {
+            startCookingSession(cookbookId);
+        }
 
         // Get Recipe from Intent (JSON Mode)
         try {
@@ -220,6 +272,10 @@ public class CookingModeActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
                 updateProgress(position);
+                if (sessionId != -1) {
+                    boolean isFinished = (position == steps.size() - 1);
+                    updateCookingSession(position, isFinished);
+                }
             }
         });
 

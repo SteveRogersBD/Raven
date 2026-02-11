@@ -4,8 +4,8 @@
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     android:elevation="4dp"
-    app:cardCornerRadius="12dp"
-    app:cardBackgroundColor="#FFFACD"
+    app:cardCornerRadius="16dp"
+    app:cardBackgroundColor="@color/chef_surface"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <LinearLayout

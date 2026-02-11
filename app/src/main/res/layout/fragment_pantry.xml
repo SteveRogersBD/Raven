@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/soft_cream"
+    android:background="@color/chef_background"
     tools:context=".ui.PantryFragment">
 
     <!-- Header Area -->
@@ -14,6 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="24dp"
+        android:background="@drawable/grad_fresh_basil"
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
@@ -34,7 +35,9 @@
             android:text="Cook Now"
             android:textStyle="bold"
             style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:textColor="@color/white"
             app:icon="@drawable/ic_restaurant_menu"
+            app:iconTint="@color/white"
             app:iconGravity="textStart"/>
     </RelativeLayout>
 

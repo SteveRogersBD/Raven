@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from sqlmodel import Session, select
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import uuid
 import os
 import requests
@@ -12,7 +12,7 @@ load_dotenv()
 
 from better_agent import workflow as recipe_workflow
 from database import get_session, create_db_and_tables
-from models import User, PantryItem, VideoRecommendation
+from models import User, PantryItem, VideoRecommendation, Cookbook, CookingSession
 from tools import search_youtube_videos
 import random
 from datetime import datetime, timedelta
@@ -672,6 +672,118 @@ def _get_image_for_item(item_name: str) -> str:
 def get_ingredient_image_endpoint(query: str):
     url = _get_image_for_item(query)
     return {"image_url": url}
+
+# --- Cookbook Endpoints ---
+class CookbookEntryCreate(BaseModel):
+    user_id: uuid.UUID
+    title: str
+    recipe_data: Dict[str, Any]
+    source_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+
+@app.post("/cookbook/add")
+def add_to_cookbook(entry: CookbookEntryCreate, session: Session = Depends(get_session)):
+    print(f"--- Adding to Cookbook: {entry.title} for user {entry.user_id} ---")
+    
+    # Check if duplicate (optional but good practice)
+    # existing = session.exec(select(Cookbook).where(Cookbook.user_id == entry.user_id).where(Cookbook.title == entry.title)).first()
+    # if existing:
+    #      return existing
+         
+    new_entry = Cookbook(
+        user_id=entry.user_id,
+        title=entry.title,
+        recipe_data=entry.recipe_data,
+        source_url=entry.source_url,
+        thumbnail_url=entry.thumbnail_url
+    )
+    session.add(new_entry)
+    session.commit()
+    session.refresh(new_entry)
+    return new_entry
+
+@app.get("/cookbook/{user_id}")
+def get_cookbook(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    recipes = session.exec(select(Cookbook).where(Cookbook.user_id == user_id).order_by(Cookbook.created_at.desc())).all()
+    return recipes
+
+@app.delete("/cookbook/{recipe_id}")
+def delete_from_cookbook(recipe_id: int, session: Session = Depends(get_session)):
+    recipe = session.get(Cookbook, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    session.delete(recipe)
+    session.commit()
+    return {"message": "Recipe deleted"}
+
+# --- Cooking Session Endpoints ---
+class CookingSessionCreate(BaseModel):
+    user_id: uuid.UUID
+    cookbook_id: Optional[int] = None
+    # Use cookbook_id preferably, but if not saved in cookbook, we can't easily link it yet in this schema 
+    # unless we add 'recipe_snapshot' to session. For now, assume we track sessions for Saved recipes 
+    # OR we just track step index for a transient session if we allow null cookbook_id.
+
+@app.post("/cooking/start")
+def start_cooking_session(data: CookingSessionCreate, session: Session = Depends(get_session)):
+    # Check if active session exists
+    active_session = session.exec(
+        select(CookingSession)
+        .where(CookingSession.user_id == data.user_id)
+        .where(CookingSession.is_finished == False)
+    ).first()
+    
+    if active_session:
+        # If exists, maybe we just return it or close it?
+        # Let's return the existing one if it matches the recipe, otherwise close it and start new?
+        # For simplicity: Close old, start new.
+        active_session.is_finished = True
+        session.add(active_session)
+        session.commit()
+    
+    new_session = CookingSession(
+        user_id=data.user_id,
+        cookbook_id=data.cookbook_id,
+        current_step_index=0,
+        is_finished=False
+    )
+    session.add(new_session)
+    session.commit()
+    session.refresh(new_session)
+    return new_session
+
+class CookingProgressUpdate(BaseModel):
+    session_id: int
+    current_step_index: int
+    is_finished: bool
+
+@app.post("/cooking/update")
+def update_cooking_progress(data: CookingProgressUpdate, session: Session = Depends(get_session)):
+    sess_obj = session.get(CookingSession, data.session_id)
+    if not sess_obj:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    sess_obj.current_step_index = data.current_step_index
+    sess_obj.is_finished = data.is_finished
+    sess_obj.last_updated = datetime.utcnow()
+    
+    session.add(sess_obj)
+    session.commit()
+    session.refresh(sess_obj)
+    return sess_obj
+
+@app.get("/cooking/active/{user_id}")
+def get_active_cooking_session(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    active_session = session.exec(
+        select(CookingSession)
+        .where(CookingSession.user_id == user_id)
+        .where(CookingSession.is_finished == False)
+    ).first()
+    
+    if not active_session:
+        return None
+        
+    return active_session
 
 if __name__ == "__main__":
     import uvicorn

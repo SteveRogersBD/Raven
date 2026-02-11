@@ -1,5 +1,6 @@
 package com.example.plateit;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -211,6 +212,7 @@ public class HomeFragment extends Fragment {
                 });
     }
 
+    @SuppressLint("StaticFieldLeak")
     private void syncVideoCache(List<RecipeVideo> videos) {
         new AsyncTask<Void, Void, Void>() {
             @Override
@@ -341,8 +343,16 @@ public class HomeFragment extends Fragment {
         }
     }
 
+    private com.example.plateit.utils.LoadingDialog loadingDialog;
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        loadingDialog = new com.example.plateit.utils.LoadingDialog(getActivity());
+    }
+
     private void uploadImageForRecipe(java.io.File file) {
-        showExtractionProgress("Scanning Dish...");
+        loadingDialog.startLoadingDialog("Scanning Dish...");
 
         okhttp3.RequestBody reqFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/jpeg"), file);
         okhttp3.MultipartBody.Part body = okhttp3.MultipartBody.Part.createFormData("file", file.getName(), reqFile);
@@ -350,8 +360,7 @@ public class HomeFragment extends Fragment {
         RetrofitClient.getAgentService().identifyDishFromImage(body).enqueue(new Callback<RecipeResponse>() {
             @Override
             public void onResponse(Call<RecipeResponse> call, Response<RecipeResponse> response) {
-                if (extractionDialog != null)
-                    extractionDialog.dismiss();
+                loadingDialog.dismissDialog();
 
                 if (response.isSuccessful() && response.body() != null) {
                     showRecipePreviewDialog(response.body());
@@ -363,8 +372,7 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onFailure(Call<RecipeResponse> call, Throwable t) {
-                if (extractionDialog != null)
-                    extractionDialog.dismiss();
+                loadingDialog.dismissDialog();
                 Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 file.delete();
             }
@@ -413,56 +421,19 @@ public class HomeFragment extends Fragment {
         bottomSheetDialog.show();
     }
 
-    private android.app.Dialog extractionDialog;
-
-    private void showExtractionProgress(String contextUrl) {
-        extractionDialog = new android.app.Dialog(requireContext());
-        extractionDialog.setContentView(R.layout.dialog_extraction_progress);
-        extractionDialog.getWindow()
-                .setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        extractionDialog.setCancelable(false);
-
-        // Populate with thumbnail if available (from video list or blog list context)
-        // Since we only have URL here, we might not have the image easily unless
-        // passed.
-        // For now, we will try to find it or just show generic background.
-
-        // Actually, let's pass the thumbnail URL to extractRecipe if possible, but for
-        // now we'll stick to a nice blurred background.
-
-        extractionDialog.show();
-    }
-
     private void extractRecipe(String url) {
         extractRecipe(url, "");
     }
 
     private void extractRecipe(String url, String thumbnailUrl) {
-        // Show Custom Dialog
-        extractionDialog = new android.app.Dialog(requireContext());
-        extractionDialog.setContentView(R.layout.dialog_extraction_progress);
-        extractionDialog.getWindow()
-                .setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        extractionDialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        extractionDialog.setCancelable(false);
-
-        ImageView imgBg = extractionDialog.findViewById(R.id.imgBackgroundThumbnail);
-        if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
-            com.squareup.picasso.Picasso.get().load(thumbnailUrl).into(imgBg);
-        } else {
-            imgBg.setImageResource(R.drawable.auth_back); // Set auth_back drawable as background
-        }
-
-        extractionDialog.show();
+        loadingDialog.startLoadingDialog("Extracting Recipe...");
 
         VideoRequest request = new VideoRequest(url);
         RetrofitClient.getService().extractRecipe(request)
                 .enqueue(new Callback<RecipeResponse>() {
                     @Override
                     public void onResponse(Call<RecipeResponse> call, Response<RecipeResponse> response) {
-                        if (extractionDialog != null)
-                            extractionDialog.dismiss();
+                        loadingDialog.dismissDialog();
                         if (response.isSuccessful() && response.body() != null) {
                             showRecipePreviewDialog(response.body());
                         } else {
@@ -473,12 +444,13 @@ public class HomeFragment extends Fragment {
 
                     @Override
                     public void onFailure(Call<RecipeResponse> call, Throwable t) {
-                        if (extractionDialog != null)
-                            extractionDialog.dismiss();
+                        loadingDialog.dismissDialog();
                         Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
+
+    // Removing old showExtractionProgress and extractionDialog field
 
     private void showRecipePreviewDialog(RecipeResponse recipe) {
         com.google.android.material.bottomsheet.BottomSheetDialog bottomSheetDialog = new com.google.android.material.bottomsheet.BottomSheetDialog(

@@ -67,3 +67,24 @@ class VideoRecommendation(SQLModel, table=True):
     length: Optional[str] = None
     link: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# 7. Cookbook (Saved Recipes)
+class Cookbook(SQLModel, table=True):
+    __tablename__ = "cookbook"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    title: str
+    recipe_data: Dict = Field(default={}, sa_column=Column(JSON)) 
+    source_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# 8. CookingSession (Active Cooking State)
+class CookingSession(SQLModel, table=True):
+    __tablename__ = "cooking_session"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    cookbook_id: Optional[int] = Field(default=None, foreign_key="cookbook.id")
+    current_step_index: int = Field(default=0)
+    is_finished: bool = Field(default=False)
+    last_updated: datetime = Field(default_factory=datetime.utcnow)

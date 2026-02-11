@@ -54,4 +54,29 @@ public interface AgentApiService {
         @retrofit2.http.GET("recommendations/videos/{user_id}")
         retrofit2.Call<com.example.plateit.responses.VideoRecommendationResponse> getRecommendations(
                         @retrofit2.http.Path("user_id") String userId);
+
+        // --- Cookbook ---
+        @retrofit2.http.POST("cookbook/add")
+        retrofit2.Call<com.example.plateit.responses.CookbookEntry> addToCookbook(
+                        @retrofit2.http.Body com.example.plateit.requests.CookbookEntryCreate request);
+
+        @retrofit2.http.GET("cookbook/{user_id}")
+        retrofit2.Call<java.util.List<com.example.plateit.responses.CookbookEntry>> getCookbook(
+                        @retrofit2.http.Path("user_id") String userId);
+
+        @retrofit2.http.DELETE("cookbook/{recipe_id}")
+        retrofit2.Call<Void> deleteFromCookbook(@retrofit2.http.Path("recipe_id") int recipeId);
+
+        // --- Cooking Session ---
+        @retrofit2.http.POST("cooking/start")
+        retrofit2.Call<com.example.plateit.responses.CookingSession> startCookingSession(
+                        @retrofit2.http.Body com.example.plateit.requests.CookingSessionCreate request);
+
+        @retrofit2.http.POST("cooking/update")
+        retrofit2.Call<com.example.plateit.responses.CookingSession> updateCookingProgress(
+                        @retrofit2.http.Body com.example.plateit.requests.CookingProgressUpdate request);
+
+        @retrofit2.http.GET("cooking/active/{user_id}")
+        retrofit2.Call<com.example.plateit.responses.CookingSession> getActiveCookingSession(
+                        @retrofit2.http.Path("user_id") String userId);
 }

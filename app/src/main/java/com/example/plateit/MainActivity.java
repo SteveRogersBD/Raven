@@ -39,14 +39,13 @@ public class MainActivity extends AppCompatActivity {
 
             if (selectedFragment != null) {
                 getSupportFragmentManager().beginTransaction()
-                        .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                        .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
                         .replace(R.id.fragment_container, selectedFragment)
                         .commit();
                 return true;
             }
             return false;
         });
-
         // Set default selection
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
