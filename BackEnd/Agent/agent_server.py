@@ -722,37 +722,32 @@ def delete_from_cookbook(recipe_id: int, session: Session = Depends(get_session)
 class CookingSessionCreate(BaseModel):
     user_id: uuid.UUID
     cookbook_id: Optional[int] = None
-    # Use cookbook_id preferably, but if not saved in cookbook, we can't easily link it yet in this schema 
-    # unless we add 'recipe_snapshot' to session. For now, assume we track sessions for Saved recipes 
-    # OR we just track step index for a transient session if we allow null cookbook_id.
 
 @app.post("/cooking/start")
 def start_cooking_session(data: CookingSessionCreate, session: Session = Depends(get_session)):
-    # Check if active session exists
-    active_session = session.exec(
+    # Close any existing active sessions for this user first
+    active_sessions = session.exec(
         select(CookingSession)
         .where(CookingSession.user_id == data.user_id)
         .where(CookingSession.is_finished == False)
-    ).first()
+    ).all()
     
-    if active_session:
-        # If exists, maybe we just return it or close it?
-        # Let's return the existing one if it matches the recipe, otherwise close it and start new?
-        # For simplicity: Close old, start new.
-        active_session.is_finished = True
-        session.add(active_session)
-        session.commit()
+    for s in active_sessions:
+        s.is_finished = True
+        session.add(s)
+    session.commit()
     
     new_session = CookingSession(
         user_id=data.user_id,
         cookbook_id=data.cookbook_id,
         current_step_index=0,
-        is_finished=False
+        is_finished=False,
+        last_updated=datetime.utcnow()
     )
     session.add(new_session)
     session.commit()
     session.refresh(new_session)
-    print(f"DEBUG: Started new cooking session: ID={new_session.id}, User={new_session.user_id}, CookbookID={new_session.cookbook_id}")
+    print(f"DEBUG: Started new cooking session: ID={new_session.id}")
     return new_session
 
 class CookingProgressUpdate(BaseModel):
@@ -773,21 +768,34 @@ def update_cooking_progress(data: CookingProgressUpdate, session: Session = Depe
     session.add(sess_obj)
     session.commit()
     session.refresh(sess_obj)
-    print(f"DEBUG: Updated session {data.session_id} -> Step: {data.current_step_index}, Finished: {data.is_finished}")
+    print(f"DEBUG: Updated session {data.session_id} -> Step: {data.current_step_index}")
     return sess_obj
 
 @app.get("/cooking/active/{user_id}")
 def get_active_cooking_session(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    # Get the single most recent unfinished session
     active_session = session.exec(
         select(CookingSession)
         .where(CookingSession.user_id == user_id)
         .where(CookingSession.is_finished == False)
+        .order_by(CookingSession.id.desc())
     ).first()
     
     if not active_session:
-        return None
+        # Return a 404 or empty object? Let's return a 204 No Content or just handle in client.
+        return None # FastAPI will return 'null'
         
     return active_session
+
+@app.get("/cooking/history/{user_id}")
+def get_cooking_history(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    sessions = session.exec(
+        select(CookingSession)
+        .where(CookingSession.user_id == user_id)
+        .order_by(CookingSession.id.desc())
+    ).all()
+    print(f"DEBUG: History for {user_id} -> {len(sessions)} items")
+    return sessions
 
 if __name__ == "__main__":
     import uvicorn

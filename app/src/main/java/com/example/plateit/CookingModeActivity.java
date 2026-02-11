@@ -124,9 +124,17 @@ public class CookingModeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_cooking_mode);
 
         sessionManager = new com.example.plateit.utils.SessionManager(this);
-        int cookbookId = getIntent().getIntExtra("cookbook_id", -1);
-        if (cookbookId != -1) {
-            startCookingSession(cookbookId);
+        int existingSessionId = getIntent().getIntExtra("session_id", -1);
+        int initialStep = getIntent().getIntExtra("initial_step", 0);
+
+        if (existingSessionId != -1) {
+            this.sessionId = existingSessionId;
+            android.widget.Toast.makeText(this, "Resuming Session...", android.widget.Toast.LENGTH_SHORT).show();
+        } else {
+            int cookbookId = getIntent().getIntExtra("cookbook_id", -1);
+            if (cookbookId != -1) {
+                startCookingSession(cookbookId);
+            }
         }
 
         // Get Recipe from Intent (JSON Mode)
@@ -218,6 +226,12 @@ public class CookingModeActivity extends AppCompatActivity {
             });
         } catch (Exception e) {
             Toast.makeText(this, "Adapter Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+
+        // Set initial step if resuming
+        if (initialStep > 0 && initialStep < steps.size()) {
+            viewPager.setCurrentItem(initialStep, false);
+            updateProgress(initialStep); // Ensure UI reflects step
         }
 
         // Show ingredients immediately - COMMENTED OUT to preventing blocking steps

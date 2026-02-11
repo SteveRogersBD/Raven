@@ -26,6 +26,10 @@ public class CookingSession {
         return currentStepIndex;
     }
 
+    public Integer getCookbookId() {
+        return cookbookId;
+    }
+
     public boolean isFinished() {
         return isFinished;
     }

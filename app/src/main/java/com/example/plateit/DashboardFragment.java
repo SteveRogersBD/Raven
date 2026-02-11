@@ -37,6 +37,17 @@ public class DashboardFragment extends Fragment {
     private TextView tvEmpty;
     private SessionManager sessionManager;
 
+    // Sessions UI
+    private RecyclerView rvSessions;
+    private TextView tvSessionsHeader;
+    private com.example.plateit.adapters.CookingSessionAdapter sessionAdapter;
+    private List<CookbookEntry> myCookbook = new ArrayList<>();
+
+    // Active Card UI
+    private androidx.cardview.widget.CardView cvActiveSession;
+    private TextView tvActiveTitle, tvActiveStep;
+    private Button btnResume;
+
     public DashboardFragment() {
         // Required empty public constructor
     }
@@ -52,7 +63,6 @@ public class DashboardFragment extends Fragment {
         // Profile Section
         ImageView btnEdit = view.findViewById(R.id.btnEditProfile);
         TextView tvChefName = view.findViewById(R.id.tvChefName);
-        // Load name if saved (SessionManager could store this, for now just UI)
 
         btnEdit.setOnClickListener(v -> showEditProfileDialog(tvChefName));
 
@@ -64,10 +74,43 @@ public class DashboardFragment extends Fragment {
         adapter = new CookbookAdapter(new ArrayList<>(), this::openRecipe, this::deleteRecipe);
         rvCookbook.setAdapter(adapter);
 
-        // Fetch Data
-        fetchCookbook();
+        // Sessions Section (History)
+        rvSessions = view.findViewById(R.id.rvSessions);
+        tvSessionsHeader = view.findViewById(R.id.tvSessionsHeader);
+        rvSessions.setLayoutManager(new LinearLayoutManager(getContext()));
+        sessionAdapter = new com.example.plateit.adapters.CookingSessionAdapter(
+                new ArrayList<>(), new ArrayList<>(), this::onResumeSession);
+        rvSessions.setAdapter(sessionAdapter);
+
+        // Active Card Section
+        cvActiveSession = view.findViewById(R.id.cvActiveSession);
+        tvActiveTitle = view.findViewById(R.id.tvActiveRecipeTitle);
+        tvActiveStep = view.findViewById(R.id.tvActiveStep);
+        btnResume = view.findViewById(R.id.btnResume);
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        fetchCookbook();
+    }
+
+    private void onResumeSession(com.example.plateit.responses.CookingSession session, CookbookEntry entry) {
+        launchCookingMode(session, entry);
+    }
+
+    private void launchCookingMode(com.example.plateit.responses.CookingSession session, CookbookEntry entry) {
+        if (entry.getRecipeData() != null) {
+            Intent intent = new Intent(getContext(), CookingModeActivity.class);
+            String json = new Gson().toJson(entry.getRecipeData());
+            intent.putExtra("recipe_json", json);
+            intent.putExtra("session_id", session.getId());
+            intent.putExtra("initial_step", session.getCurrentStepIndex());
+            intent.putExtra("cookbook_id", entry.getId());
+            startActivity(intent);
+        }
     }
 
     private void fetchCookbook() {
@@ -80,7 +123,9 @@ public class DashboardFragment extends Fragment {
             public void onResponse(Call<List<CookbookEntry>> call, Response<List<CookbookEntry>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     List<CookbookEntry> recipes = response.body();
+                    myCookbook = recipes;
                     android.util.Log.d("PlateIt", "Cookbook fetched: " + recipes.size() + " items");
+
                     if (recipes.isEmpty()) {
                         tvEmpty.setVisibility(View.VISIBLE);
                         rvCookbook.setVisibility(View.GONE);
@@ -89,6 +134,10 @@ public class DashboardFragment extends Fragment {
                         rvCookbook.setVisibility(View.VISIBLE);
                         adapter.updateData(recipes);
                     }
+
+                    // Fetch Active Card and History
+                    fetchActiveSession();
+                    fetchHistory();
                 } else {
                     android.util.Log.e("PlateIt", "Fetch failed: " + response.code());
                 }
@@ -102,12 +151,88 @@ public class DashboardFragment extends Fragment {
         });
     }
 
+    private void fetchActiveSession() {
+        String userId = sessionManager.getUserId();
+        if (userId == null)
+            return;
+
+        RetrofitClient.getAgentService().getActiveCookingSession(userId)
+                .enqueue(new Callback<com.example.plateit.responses.CookingSession>() {
+                    @Override
+                    public void onResponse(Call<com.example.plateit.responses.CookingSession> call,
+                            Response<com.example.plateit.responses.CookingSession> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            com.example.plateit.responses.CookingSession session = response.body();
+
+                            // Match recipe
+                            CookbookEntry match = null;
+                            for (CookbookEntry entry : myCookbook) {
+                                if (entry.getId() == session.getCookbookId()) {
+                                    match = entry;
+                                    break;
+                                }
+                            }
+
+                            if (match != null) {
+                                cvActiveSession.setVisibility(View.VISIBLE);
+                                tvActiveTitle.setText(match.getTitle());
+                                tvActiveStep.setText("Currently on Step " + (session.getCurrentStepIndex() + 1));
+
+                                final CookbookEntry finalMatch = match;
+                                btnResume.setOnClickListener(v -> launchCookingMode(session, finalMatch));
+                            } else {
+                                cvActiveSession.setVisibility(View.GONE);
+                            }
+                        } else {
+                            cvActiveSession.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<com.example.plateit.responses.CookingSession> call, Throwable t) {
+                        cvActiveSession.setVisibility(View.GONE);
+                    }
+                });
+    }
+
+    private void fetchHistory() {
+        String userId = sessionManager.getUserId();
+        if (userId == null)
+            return;
+
+        RetrofitClient.getAgentService().getCookingHistory(userId)
+                .enqueue(new Callback<List<com.example.plateit.responses.CookingSession>>() {
+                    @Override
+                    public void onResponse(Call<List<com.example.plateit.responses.CookingSession>> call,
+                            Response<List<com.example.plateit.responses.CookingSession>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            List<com.example.plateit.responses.CookingSession> sessions = response.body();
+                            if (!sessions.isEmpty()) {
+                                tvSessionsHeader.setVisibility(View.VISIBLE);
+                                tvSessionsHeader.setText("Recent Activity");
+                                rvSessions.setVisibility(View.VISIBLE);
+                                sessionAdapter.updateData(sessions, myCookbook);
+                            } else {
+                                tvSessionsHeader.setVisibility(View.GONE);
+                                rvSessions.setVisibility(View.GONE);
+                            }
+                        } else {
+                            tvSessionsHeader.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<com.example.plateit.responses.CookingSession>> call, Throwable t) {
+                        tvSessionsHeader.setVisibility(View.GONE);
+                    }
+                });
+    }
+
     private void openRecipe(CookbookEntry entry) {
         if (entry.getRecipeData() != null) {
             Intent intent = new Intent(getContext(), RecipeActivity.class);
             String json = new Gson().toJson(entry.getRecipeData());
             intent.putExtra("recipe_json", json);
-            // Also pass cookbook ID if we want to track session against it
             intent.putExtra("cookbook_id", entry.getId());
             startActivity(intent);
         } else {
@@ -125,7 +250,7 @@ public class DashboardFragment extends Fragment {
                         public void onResponse(Call<Void> call, Response<Void> response) {
                             if (response.isSuccessful()) {
                                 Toast.makeText(getContext(), "Deleted", Toast.LENGTH_SHORT).show();
-                                fetchCookbook(); // Refresh
+                                fetchCookbook();
                             }
                         }
 

@@ -79,4 +79,8 @@ public interface AgentApiService {
         @retrofit2.http.GET("cooking/active/{user_id}")
         retrofit2.Call<com.example.plateit.responses.CookingSession> getActiveCookingSession(
                         @retrofit2.http.Path("user_id") String userId);
+
+        @retrofit2.http.GET("cooking/history/{user_id}")
+        retrofit2.Call<java.util.List<com.example.plateit.responses.CookingSession>> getCookingHistory(
+                        @retrofit2.http.Path("user_id") String userId);
 }
