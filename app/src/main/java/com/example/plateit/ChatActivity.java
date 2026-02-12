@@ -93,11 +93,10 @@ public class ChatActivity extends AppCompatActivity {
         rvChatMessages.scrollToPosition(messageList.size() - 1);
 
         // 2. Add "..." placeholder for AI
-        ChatMessage typingMsg = new ChatMessage("...", false);
+        final ChatMessage typingMsg = new ChatMessage("...", false);
         messageList.add(typingMsg);
-        final int placeholderIndex = messageList.size() - 1;
-        chatAdapter.notifyItemInserted(placeholderIndex);
-        rvChatMessages.scrollToPosition(placeholderIndex);
+        chatAdapter.notifyItemInserted(messageList.size() - 1);
+        rvChatMessages.scrollToPosition(messageList.size() - 1);
 
         // 3. Prepare Data
         String imageBase64 = null;
@@ -140,9 +139,12 @@ public class ChatActivity extends AppCompatActivity {
                     public void onResponse(retrofit2.Call<com.example.plateit.responses.ChatResponse> call,
                             retrofit2.Response<com.example.plateit.responses.ChatResponse> response) {
 
-                        // Remove "..." placeholder
-                        messageList.remove(placeholderIndex);
-                        chatAdapter.notifyItemRemoved(placeholderIndex);
+                        // Remove "..." placeholder safely
+                        int currentPos = messageList.indexOf(typingMsg);
+                        if (currentPos != -1) {
+                            messageList.remove(currentPos);
+                            chatAdapter.notifyItemRemoved(currentPos);
+                        }
 
                         if (response.isSuccessful() && response.body() != null) {
                             com.example.plateit.responses.ChatResponse resp = response.body();
@@ -156,20 +158,25 @@ public class ChatActivity extends AppCompatActivity {
 
                             messageList.add(aiMsg);
                             chatAdapter.notifyItemInserted(messageList.size() - 1);
-                            rvChatMessages.scrollToPosition(messageList.size() - 1);
+                            rvChatMessages.smoothScrollToPosition(messageList.size() - 1);
                         } else {
                             messageList.add(new ChatMessage("Sorry, I'm having trouble connecting.", false));
                             chatAdapter.notifyItemInserted(messageList.size() - 1);
+                            rvChatMessages.smoothScrollToPosition(messageList.size() - 1);
                         }
                     }
 
                     @Override
                     public void onFailure(retrofit2.Call<com.example.plateit.responses.ChatResponse> call,
                             Throwable t) {
-                        messageList.remove(placeholderIndex);
-                        chatAdapter.notifyItemRemoved(placeholderIndex);
+                        int currentPos = messageList.indexOf(typingMsg);
+                        if (currentPos != -1) {
+                            messageList.remove(currentPos);
+                            chatAdapter.notifyItemRemoved(currentPos);
+                        }
                         messageList.add(new ChatMessage("Network error: " + t.getMessage(), false));
                         chatAdapter.notifyItemInserted(messageList.size() - 1);
+                        rvChatMessages.smoothScrollToPosition(messageList.size() - 1);
                     }
                 });
     }
@@ -237,7 +244,16 @@ public class ChatActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             messageList.clear();
                             for (com.example.plateit.responses.ChatHistoryResponse item : response.body()) {
-                                messageList.add(new ChatMessage(item.getContent(), "user".equals(item.getSender())));
+                                ChatMessage msg = new ChatMessage(
+                                        item.getContent(),
+                                        item.getUiType() != null ? item.getUiType() : "none",
+                                        item.getRecipeData(),
+                                        item.getIngredientData(),
+                                        item.getVideoData());
+                                if ("user".equals(item.getSender())) {
+                                    msg.setUser(true);
+                                }
+                                messageList.add(msg);
                             }
                             chatAdapter.notifyDataSetChanged();
                             if (!messageList.isEmpty()) {

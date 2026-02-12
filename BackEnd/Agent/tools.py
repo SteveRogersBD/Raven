@@ -10,12 +10,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- HARDCODED GEMINI KEY ---
-# Keys should be provided via environment variables (.env)
-# ----------------------------
-
-# --- Google / SerpAPI Tools ---
-
 @tool
 def pexels_image_search(query: str):
     """
@@ -191,7 +185,8 @@ def search_recipes(query: str, cuisine: str = None, diet: str = None, number: in
     
     results = []
     for r in data.get("results", []):
-        results.append(f"ID: {r['id']} | Title: {r['title']} | Image: {r.get('image')} | Time: {r.get('readyInMinutes')}m")
+        source_url = r.get("sourceUrl") or r.get("spoonacularSourceUrl")
+        results.append(f"ID: {r['id']} | Title: {r['title']} | Image: {r.get('image')} | Time: {r.get('readyInMinutes')}m | Source: {source_url}")
         
     return "\n".join(results) if results else "No recipes found."
 

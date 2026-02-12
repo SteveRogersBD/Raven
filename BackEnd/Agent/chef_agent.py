@@ -123,6 +123,8 @@ def waiter_node(state: AgentState):
        - If the Chef found data (recipes, videos), just mention you found them.
     2. Extract all recipes, ingredients, or videos into the structured data fields.
     3. The mobile app will show the rich cards; the bubble only shows the chat.
+    4. Ensure 'source_url' in RecipeCard is extracted from search results.
+    5. For videos, extract 'title', 'url', and 'thumbnail' precisely from the Chef's search output.
     """)
     
     messages = [system_prompt] + state["messages"]

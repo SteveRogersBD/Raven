@@ -107,10 +107,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private android.os.Handler handler = new android.os.Handler();
 
         void bind(ChatMessage message, boolean animate) {
-            if (animate) {
+            // Set text first so animateDots loop or animateText works correctly
+            tvMessage.setText(message.getMessage());
+
+            if ("...".equals(message.getMessage())) {
+                animateDots();
+            } else if (animate) {
                 animateText(message.getMessage());
-            } else {
-                tvMessage.setText(message.getMessage());
             }
 
             // Reset Visibility
@@ -151,12 +154,29 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                             item.getTitle(), item.getUrl(), item.getThumbnail(), "", "", ""));
                 }
                 // Pass true for isChatMode
-                VideoAdapter videoAdapter = new VideoAdapter(converted, video -> {
+                VideoAdapter videoAdapter = new VideoAdapter(converted, true, video -> {
                     showVideoOptionsSheet(itemView.getContext(), video);
                 });
-                videoAdapter.setChatMode(true);
                 rvVideoList.setAdapter(videoAdapter);
             }
+        }
+
+        private void animateDots() {
+            final String[] dots = { ".", "..", "..." };
+            new Thread(() -> {
+                int count = 0;
+                while (getAdapterPosition() != RecyclerView.NO_POSITION
+                        && "...".equals(tvMessage.getText().toString())) {
+                    final String d = dots[count % 3];
+                    handler.post(() -> tvMessage.setText(d));
+                    count++;
+                    try {
+                        Thread.sleep(400);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            }).start();
         }
 
         private void animateText(String text) {
@@ -307,18 +327,11 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                             if (response.isSuccessful() && response.body() != null) {
                                 com.example.plateit.responses.RecipeResponse recipeResp = response.body();
 
-                                // Convert to Recipe model
-                                com.example.plateit.models.Recipe recipe = new com.example.plateit.models.Recipe(
-                                        recipeResp.getName(),
-                                        recipeResp.getSteps(),
-                                        recipeResp.getIngredients(),
-                                        recipeResp.getSourceUrl(),
-                                        recipeResp.getSourceImage());
-
-                                // Start CookingModeActivity
+                                // Start RecipeActivity instead of CookingModeActivity directly
                                 android.content.Intent intent = new android.content.Intent(context,
-                                        com.example.plateit.CookingModeActivity.class);
-                                intent.putExtra("recipe_object", recipe);
+                                        com.example.plateit.RecipeActivity.class);
+                                String json = new com.google.gson.Gson().toJson(recipeResp);
+                                intent.putExtra("recipe_json", json);
                                 context.startActivity(intent);
                             } else {
                                 android.widget.Toast

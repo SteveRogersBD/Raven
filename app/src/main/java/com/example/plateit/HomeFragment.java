@@ -119,7 +119,7 @@ public class HomeFragment extends Fragment {
         rvRecipes.setLayoutManager(videoLayoutManager);
 
         // Initialize with empty list
-        VideoAdapter videoAdapter = new VideoAdapter(new ArrayList<>(), this::showVideoOptionsDialog);
+        VideoAdapter videoAdapter = new VideoAdapter(new ArrayList<>(), false, this::showVideoOptionsDialog);
         rvRecipes.setAdapter(videoAdapter);
 
         // Fetch Real Data

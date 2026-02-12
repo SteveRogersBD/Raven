@@ -379,7 +379,17 @@ def chat_endpoint(request: ChatRequest, session: Session = Depends(get_session))
         response_data = json.loads(response_json_str)
         ai_display_text = response_data.get("chat_bubble", "Here you go!")
         
-        session.add(Message(session_id=request.thread_id, sender="ai", content=ai_display_text))
+        # Save structured AI message
+        ai_msg = Message(
+            session_id=request.thread_id, 
+            sender="ai", 
+            content=ai_display_text,
+            ui_type=response_data.get("ui_type", "none"),
+            recipe_data=response_data.get("recipe_data"),
+            ingredient_data=response_data.get("ingredient_data"),
+            video_data=response_data.get("video_data")
+        )
+        session.add(ai_msg)
         
         # Update Session Metadata
         if chat_sess:
@@ -486,6 +496,10 @@ def get_chat_history(thread_id: str, session: Session = Depends(get_session)):
     return [{
         "sender": m.sender,
         "content": m.content,
+        "ui_type": m.ui_type,
+        "recipe_data": m.recipe_data,
+        "ingredient_data": m.ingredient_data,
+        "video_data": m.video_data,
         "created_at": m.created_at
     } for m in messages]
 

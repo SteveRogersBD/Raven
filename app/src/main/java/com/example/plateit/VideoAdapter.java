@@ -16,18 +16,15 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
 
     private List<RecipeVideo> videoList;
     private OnVideoClickListener listener;
-    private boolean isChatMode = false;
-
-    public void setChatMode(boolean chatMode) {
-        this.isChatMode = chatMode;
-    }
+    private boolean isChatMode;
 
     public interface OnVideoClickListener {
         void onVideoClick(RecipeVideo video);
     }
 
-    public VideoAdapter(List<RecipeVideo> videoList, OnVideoClickListener listener) {
+    public VideoAdapter(List<RecipeVideo> videoList, boolean isChatMode, OnVideoClickListener listener) {
         this.videoList = videoList;
+        this.isChatMode = isChatMode;
         this.listener = listener;
     }
 

@@ -63,4 +63,8 @@ public class ChatMessage {
     public ChatResponse.VideoListPayload getVideoData() {
         return videoData;
     }
+
+    public void setUser(boolean user) {
+        isUser = user;
+    }
 }

@@ -53,6 +53,10 @@ class Message(SQLModel, table=True):
     session_id: str = Field(foreign_key="chatsession.id", index=True)
     sender: str # "user" or "ai"
     content: str # The text content
+    ui_type: Optional[str] = "none"
+    recipe_data: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
+    ingredient_data: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
+    video_data: Optional[Dict] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 # 6. Video Recommendations (Cache)
