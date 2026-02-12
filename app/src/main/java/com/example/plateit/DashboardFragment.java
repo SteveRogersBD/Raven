@@ -95,6 +95,8 @@ public class DashboardFragment extends Fragment {
     public void onResume() {
         super.onResume();
         fetchCookbook();
+        fetchActiveSession();
+        fetchHistory();
     }
 
     private void onResumeSession(com.example.plateit.responses.CookingSession session, CookbookEntry entry) {
@@ -118,6 +120,7 @@ public class DashboardFragment extends Fragment {
         if (userId == null)
             return;
 
+        android.util.Log.d("PlateIt", "DEBUG: Calling getCookbook for " + userId);
         RetrofitClient.getAgentService().getCookbook(userId).enqueue(new Callback<List<CookbookEntry>>() {
             @Override
             public void onResponse(Call<List<CookbookEntry>> call, Response<List<CookbookEntry>> response) {
@@ -134,19 +137,17 @@ public class DashboardFragment extends Fragment {
                         rvCookbook.setVisibility(View.VISIBLE);
                         adapter.updateData(recipes);
                     }
-
-                    // Fetch Active Card and History
-                    fetchActiveSession();
-                    fetchHistory();
                 } else {
-                    android.util.Log.e("PlateIt", "Fetch failed: " + response.code());
+                    android.util.Log.e("PlateIt", "Cookbook fetch failed: " + response.code());
                 }
             }
 
             @Override
             public void onFailure(Call<List<CookbookEntry>> call, Throwable t) {
-                android.util.Log.e("PlateIt", "Fetch Error: " + t.getMessage(), t);
-                Toast.makeText(getContext(), "Failed to load cookbook", Toast.LENGTH_SHORT).show();
+                android.util.Log.e("PlateIt", "Cookbook Fetch Error: " + t.getMessage(), t);
+                Toast.makeText(getContext(), "Failed to load recipes", Toast.LENGTH_SHORT).show();
+
+                // Still try to find sessions
             }
         });
     }
@@ -166,10 +167,12 @@ public class DashboardFragment extends Fragment {
 
                             // Match recipe
                             CookbookEntry match = null;
-                            for (CookbookEntry entry : myCookbook) {
-                                if (entry.getId() == session.getCookbookId()) {
-                                    match = entry;
-                                    break;
+                            if (myCookbook != null) {
+                                for (CookbookEntry entry : myCookbook) {
+                                    if (entry.getId() == session.getCookbookId()) {
+                                        match = entry;
+                                        break;
+                                    }
                                 }
                             }
 
@@ -200,7 +203,7 @@ public class DashboardFragment extends Fragment {
         if (userId == null)
             return;
 
-        RetrofitClient.getAgentService().getCookingHistory(userId)
+        RetrofitClient.getAgentService().getAllCookingSessions(userId)
                 .enqueue(new Callback<List<com.example.plateit.responses.CookingSession>>() {
                     @Override
                     public void onResponse(Call<List<com.example.plateit.responses.CookingSession>> call,

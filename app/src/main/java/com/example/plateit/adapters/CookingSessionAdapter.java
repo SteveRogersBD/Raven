@@ -74,18 +74,24 @@ public class CookingSessionAdapter extends RecyclerView.Adapter<CookingSessionAd
             holder.tvProgress.setTextColor(0xFF4CAF50); // Green
             holder.btnResume.setVisibility(View.GONE);
             holder.ivStatus.setAlpha(0.5f);
+            holder.itemView.setAlpha(0.7f);
+            holder.itemView.setOnClickListener(null);
         } else {
             holder.tvProgress.setText("Step " + (session.getCurrentStepIndex() + 1) + " • In Progress");
             holder.tvProgress.setTextColor(0xFFFF9800); // Orange
             holder.btnResume.setVisibility(View.VISIBLE);
             holder.ivStatus.setAlpha(1.0f);
+            holder.itemView.setAlpha(1.0f);
 
             final CookbookEntry finalMatch = match;
-            holder.btnResume.setOnClickListener(v -> {
+            View.OnClickListener resumeClick = v -> {
                 if (resumeListener != null && finalMatch != null) {
                     resumeListener.onResume(session, finalMatch);
                 }
-            });
+            };
+
+            holder.btnResume.setOnClickListener(resumeClick);
+            holder.itemView.setOnClickListener(resumeClick); // Make entire card clickable
         }
     }
 

@@ -725,18 +725,7 @@ class CookingSessionCreate(BaseModel):
 
 @app.post("/cooking/start")
 def start_cooking_session(data: CookingSessionCreate, session: Session = Depends(get_session)):
-    # Close any existing active sessions for this user first
-    active_sessions = session.exec(
-        select(CookingSession)
-        .where(CookingSession.user_id == data.user_id)
-        .where(CookingSession.is_finished == False)
-    ).all()
-    
-    for s in active_sessions:
-        s.is_finished = True
-        session.add(s)
-    session.commit()
-    
+    # Start new session. We keep older ones open so user can browse history.
     new_session = CookingSession(
         user_id=data.user_id,
         cookbook_id=data.cookbook_id,
@@ -747,7 +736,6 @@ def start_cooking_session(data: CookingSessionCreate, session: Session = Depends
     session.add(new_session)
     session.commit()
     session.refresh(new_session)
-    print(f"DEBUG: Started new cooking session: ID={new_session.id}")
     return new_session
 
 class CookingProgressUpdate(BaseModel):
@@ -768,34 +756,26 @@ def update_cooking_progress(data: CookingProgressUpdate, session: Session = Depe
     session.add(sess_obj)
     session.commit()
     session.refresh(sess_obj)
-    print(f"DEBUG: Updated session {data.session_id} -> Step: {data.current_step_index}")
     return sess_obj
 
 @app.get("/cooking/active/{user_id}")
 def get_active_cooking_session(user_id: uuid.UUID, session: Session = Depends(get_session)):
     # Get the single most recent unfinished session
-    active_session = session.exec(
+    return session.exec(
         select(CookingSession)
         .where(CookingSession.user_id == user_id)
         .where(CookingSession.is_finished == False)
         .order_by(CookingSession.id.desc())
     ).first()
-    
-    if not active_session:
-        # Return a 404 or empty object? Let's return a 204 No Content or just handle in client.
-        return None # FastAPI will return 'null'
-        
-    return active_session
 
-@app.get("/cooking/history/{user_id}")
-def get_cooking_history(user_id: uuid.UUID, session: Session = Depends(get_session)):
-    sessions = session.exec(
+@app.get("/cooking/sessions/{user_id}")
+def get_all_cooking_sessions(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    # Return all sessions (History)
+    return session.exec(
         select(CookingSession)
         .where(CookingSession.user_id == user_id)
         .order_by(CookingSession.id.desc())
     ).all()
-    print(f"DEBUG: History for {user_id} -> {len(sessions)} items")
-    return sessions
 
 if __name__ == "__main__":
     import uvicorn
