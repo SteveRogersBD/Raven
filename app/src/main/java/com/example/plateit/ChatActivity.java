@@ -31,6 +31,7 @@ public class ChatActivity extends AppCompatActivity {
     private ImageButton btnSendMessage;
 
     private Uri pendingImageUri = null;
+    private String currentThreadId = java.util.UUID.randomUUID().toString();
 
     private final ActivityResultLauncher<String> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(), uri -> {
@@ -91,7 +92,14 @@ public class ChatActivity extends AppCompatActivity {
         chatAdapter.notifyItemInserted(messageList.size() - 1);
         rvChatMessages.scrollToPosition(messageList.size() - 1);
 
-        // 2. Prepare Data
+        // 2. Add "..." placeholder for AI
+        ChatMessage typingMsg = new ChatMessage("...", false);
+        messageList.add(typingMsg);
+        final int placeholderIndex = messageList.size() - 1;
+        chatAdapter.notifyItemInserted(placeholderIndex);
+        rvChatMessages.scrollToPosition(placeholderIndex);
+
+        // 3. Prepare Data
         String imageBase64 = null;
         if (pendingImageUri != null) {
             try {
@@ -109,21 +117,20 @@ public class ChatActivity extends AppCompatActivity {
             }
         }
 
-        // 3. Reset Inputs
+        // 4. Reset Inputs
         etChatMessage.setText("");
         pendingImageUri = null;
         btnAttachImage.setColorFilter(getColor(R.color.gray_600));
 
-        // 4. API Call
+        // 5. API Call
         com.example.plateit.utils.SessionManager sessionManager = new com.example.plateit.utils.SessionManager(this);
         String userId = sessionManager.getUserId();
-        String threadId = "chat_" + userId; // Unique thread per user for now
 
         com.example.plateit.requests.ChatRequest req = new com.example.plateit.requests.ChatRequest(
                 text,
-                threadId,
+                currentThreadId,
                 userId,
-                null, // No specific recipe context
+                null,
                 0,
                 imageBase64);
 
@@ -132,16 +139,17 @@ public class ChatActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(retrofit2.Call<com.example.plateit.responses.ChatResponse> call,
                             retrofit2.Response<com.example.plateit.responses.ChatResponse> response) {
+
+                        // Remove "..." placeholder
+                        messageList.remove(placeholderIndex);
+                        chatAdapter.notifyItemRemoved(placeholderIndex);
+
                         if (response.isSuccessful() && response.body() != null) {
                             com.example.plateit.responses.ChatResponse resp = response.body();
-                            String reply = resp.getChatBubble();
 
-                            String uiType = resp.getUiType();
-
-                            // Add AI Message with rich data
                             ChatMessage aiMsg = new ChatMessage(
-                                    reply,
-                                    uiType != null ? uiType : "none",
+                                    resp.getChatBubble(),
+                                    resp.getUiType() != null ? resp.getUiType() : "none",
                                     resp.getRecipeData(),
                                     resp.getIngredientData(),
                                     resp.getVideoData());
@@ -149,23 +157,19 @@ public class ChatActivity extends AppCompatActivity {
                             messageList.add(aiMsg);
                             chatAdapter.notifyItemInserted(messageList.size() - 1);
                             rvChatMessages.scrollToPosition(messageList.size() - 1);
-
                         } else {
-                            ChatMessage errorMsg = new ChatMessage(
-                                    "Sorry, I'm having trouble connecting to the kitchen.", false);
-                            messageList.add(errorMsg);
+                            messageList.add(new ChatMessage("Sorry, I'm having trouble connecting.", false));
                             chatAdapter.notifyItemInserted(messageList.size() - 1);
-                            rvChatMessages.scrollToPosition(messageList.size() - 1);
                         }
                     }
 
                     @Override
                     public void onFailure(retrofit2.Call<com.example.plateit.responses.ChatResponse> call,
                             Throwable t) {
-                        ChatMessage errorMsg = new ChatMessage("Network error: " + t.getMessage(), false);
-                        messageList.add(errorMsg);
+                        messageList.remove(placeholderIndex);
+                        chatAdapter.notifyItemRemoved(placeholderIndex);
+                        messageList.add(new ChatMessage("Network error: " + t.getMessage(), false));
                         chatAdapter.notifyItemInserted(messageList.size() - 1);
-                        rvChatMessages.scrollToPosition(messageList.size() - 1);
                     }
                 });
     }
@@ -194,15 +198,20 @@ public class ChatActivity extends AppCompatActivity {
                             retrofit2.Response<List<com.example.plateit.models.ChatSession>> response) {
                         if (response.isSuccessful() && response.body() != null) {
                             List<com.example.plateit.models.ChatSession> sessions = response.body();
+                            if (sessions.isEmpty()) {
+                                Toast.makeText(ChatActivity.this, "No history found", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
                             String[] titles = new String[sessions.size()];
                             for (int i = 0; i < sessions.size(); i++) {
-                                titles[i] = sessions.get(i).getTitle() + " (" + sessions.get(i).getUpdatedAt() + ")";
+                                titles[i] = sessions.get(i).getTitle();
                             }
 
                             new androidx.appcompat.app.AlertDialog.Builder(ChatActivity.this)
                                     .setTitle("Chat History")
                                     .setItems(titles, (dialog, which) -> {
-                                        loadChatHistory(sessions.get(which).getId());
+                                        currentThreadId = sessions.get(which).getId();
+                                        loadChatHistory(currentThreadId);
                                     })
                                     .show();
                         } else {
@@ -231,7 +240,9 @@ public class ChatActivity extends AppCompatActivity {
                                 messageList.add(new ChatMessage(item.getContent(), "user".equals(item.getSender())));
                             }
                             chatAdapter.notifyDataSetChanged();
-                            rvChatMessages.scrollToPosition(messageList.size() - 1);
+                            if (!messageList.isEmpty()) {
+                                rvChatMessages.scrollToPosition(messageList.size() - 1);
+                            }
                         }
                     }
 
