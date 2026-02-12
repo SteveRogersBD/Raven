@@ -267,8 +267,27 @@ def get_random_recipes(tags: str = None, number: int = 3):
 def extract_recipe_from_url(url: str):
     """Extract recipe data from a website URL."""
     data = _spoonacular_get("/recipes/extract", {"url": url})
-    if "error" in data: return data["error"]
     
+    # Fallback for image if Spoonacular misses it but it's in Open Graph
+    if isinstance(data, dict) and not data.get("image"):
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            resp = requests.get(url, headers=headers, timeout=5)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                # Try Open Graph
+                og_image = soup.find("meta", property="og:image")
+                if og_image:
+                    data["image"] = og_image.get("content")
+                else:
+                    # Try Twitter
+                    tw_image = soup.find("meta", name="twitter:image")
+                    if tw_image:
+                        data["image"] = tw_image.get("content")
+        except:
+            pass
+
+    if "error" in data: return data["error"]
     return data
 
 @tool
@@ -357,18 +376,30 @@ def download_video_file(url: str, filename: str = "temp_video_recipe.mp4"):
     # 1. Try yt-dlp first (handles most social media + direct links often)
     ydl_opts = {
         'outtmpl': abs_filename, # Force filename
-        'format': 'best[ext=mp4]/best', # Prefer mp4
+        # 'best' is safer when ffmpeg is missing to avoid separate audio/video streams
+        'format': 'best[ext=mp4]/best', 
         'quiet': True,
         'overwrites': True,
+        'no_warnings': False, # Show warnings for debugging
+        'js_runtimes': {'node': {}}, # Use node which we confirmed is available
+        'nocheckcertificate': True,
     }
     
     print(f" -> Attempting download with yt-dlp: {url}")
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-        return abs_filename
+            
+        # Verify file exists and is not empty
+        if os.path.exists(abs_filename) and os.path.getsize(abs_filename) > 0:
+            print(f" -> Download successful: {abs_filename} ({os.path.getsize(abs_filename)} bytes)")
+            return abs_filename
+        else:
+            print(f" -> yt-dlp created an empty file or failed.")
+            if os.path.exists(abs_filename): os.remove(abs_filename)
     except Exception as e:
         print(f" -> yt-dlp failed: {e}. Falling back to requests.")
+        if os.path.exists(abs_filename): os.remove(abs_filename)
         
     # 2. Fallback to direct request (for simple file servers)
     try:
@@ -771,7 +802,8 @@ def get_video_metadata(url: str):
             if info:
                 title = info.get('title', '')
                 description = info.get('description', '')
-                return {"title": title, "description": description}
+                thumbnail = info.get('thumbnail', '')
+                return {"title": title, "description": description, "thumbnail": thumbnail}
     except Exception as e:
         print(f"Error extracting metadata: {e}")
         return None

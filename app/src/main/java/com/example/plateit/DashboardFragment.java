@@ -70,7 +70,7 @@ public class DashboardFragment extends Fragment {
         rvCookbook = view.findViewById(R.id.rvCookbook);
         tvEmpty = view.findViewById(R.id.tvEmptyCookbook);
 
-        rvCookbook.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvCookbook.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         adapter = new CookbookAdapter(new ArrayList<>(), this::openRecipe, this::deleteRecipe);
         rvCookbook.setAdapter(adapter);
 

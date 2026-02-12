@@ -36,11 +36,7 @@ public class CookbookAdapter extends RecyclerView.Adapter<CookbookAdapter.ViewHo
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_video_card, parent, false); // Reusing
-                                                                                                               // video
-                                                                                                               // card
-                                                                                                               // for
-                                                                                                               // now
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_cookbook_horizontal, parent, false);
         return new ViewHolder(view);
     }
 

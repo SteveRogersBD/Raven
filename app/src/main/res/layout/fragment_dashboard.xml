@@ -1,163 +1,166 @@
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="@color/plain_white"
-    android:fillViewport="true">
+    android:padding="24dp">
 
+    <!-- Fixed Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp">
 
-        <!-- Header -->
+        <ImageView
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:src="@drawable/app_logo"
+            android:background="@drawable/circle_bg_gray"
+            android:padding="8dp"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+
+            <TextView
+                android:id="@+id/tvChefName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chef Anirudh"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/tech_black"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Level 2 • Sous Chef"
+                android:textSize="14sp"
+                android:textColor="#757575"/>
+        </LinearLayout>
+        
+        <ImageView
+            android:id="@+id/btnEditProfile"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_edit"
+            app:tint="@color/tech_black"/>
+    </LinearLayout>
+
+    <!-- Content Area -->
+    <!-- We keep the Resume card and Cookbook at the top, only sessions scroll if needed -->
+    <!-- OR we can put a limit on sessions height -->
+
+    <!-- Active Session Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cvActiveSession"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="@color/soft_cream"
+        android:layout_marginBottom="20dp"
+        android:visibility="gone">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="32dp">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:src="@drawable/app_logo"
-                android:background="@drawable/circle_bg_gray"
-                android:padding="8dp"/>
-
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:layout_marginStart="16dp">
+                android:text="Resume Cooking"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/banana_yellow"
+                android:layout_marginBottom="8dp"/>
 
-                <TextView
-                    android:id="@+id/tvChefName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Chef Anirudh"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/tech_black"/>
+            <TextView
+                android:id="@+id/tvActiveRecipeTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recipe Title"
+                android:textSize="15sp"
+                android:textColor="@color/tech_black"
+                android:layout_marginBottom="4dp"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Level 2 • Sous Chef"
-                    android:textSize="16sp"
-                    android:textColor="#757575"/>
-            </LinearLayout>
-            
-            <ImageView
-                android:id="@+id/btnEditProfile"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@drawable/ic_edit"
-                app:tint="@color/tech_black"/>
+            <TextView
+                android:id="@+id/tvActiveStep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Step ?/?"
+                android:textSize="13sp"
+                android:textColor="@color/gray_600"/>
+
+            <Button
+                android:id="@+id/btnResume"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Resume"
+                android:textSize="12sp"
+                android:backgroundTint="@color/tech_black"
+                android:textColor="@color/plain_white"
+                android:layout_gravity="end"
+                android:layout_marginTop="4dp"/>
         </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-        <!-- Active Session Card -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/cvActiveSession"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="@color/soft_cream"
-            android:layout_marginBottom="24dp"
-            android:visibility="gone">
+    <!-- My Cookbook Section (Horizontal) -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="My Cookbook"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/tech_black"
+        android:layout_marginBottom="8dp"/>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCookbook"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:clipToPadding="false"
+        android:paddingEnd="16dp"/>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Resume Cooking"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:textColor="@color/banana_yellow"
-                    android:layout_marginBottom="8dp"/>
+    <TextView
+        android:id="@+id/tvEmptyCookbook"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No saved recipes yet."
+        android:gravity="center"
+        android:textSize="14sp"
+        android:textColor="@color/gray_600"
+        android:visibility="gone"
+        android:layout_marginBottom="20dp"/>
 
-                <TextView
-                    android:id="@+id/tvActiveRecipeTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recipe Title"
-                    android:textSize="16sp"
-                    android:textColor="@color/tech_black"
-                    android:layout_marginBottom="4dp"/>
+    <!-- Recent Sessions Section (Vertical Scrollable) -->
+    <TextView
+        android:id="@+id/tvSessionsHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Recent Activity"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/tech_black"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone" />
 
-                <TextView
-                    android:id="@+id/tvActiveStep"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Step ?/?"
-                    android:textSize="14sp"
-                    android:textColor="@color/gray_600"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvSessions"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"
+        android:clipToPadding="false"
+        android:paddingBottom="24dp"/>
 
-                <Button
-                    android:id="@+id/btnResume"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Resume"
-                    android:backgroundTint="@color/tech_black"
-                    android:textColor="@color/plain_white"
-                    android:layout_gravity="end"
-                    android:layout_marginTop="8dp"/>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <TextView
-            android:id="@+id/tvSessionsHeader"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Recent Sessions"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="@color/tech_black"
-            android:layout_marginBottom="8dp"
-            android:visibility="gone" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSessions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:nestedScrollingEnabled="false"
-            android:layout_marginBottom="24dp" />
-
-        <!-- Cookbook Section -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="My Cookbook"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="@color/tech_black"
-            android:layout_marginBottom="12dp"/>
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCookbook"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false" />
-
-        <TextView
-            android:id="@+id/tvEmptyCookbook"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="No saved recipes yet. Start exploring!"
-            android:gravity="center"
-            android:textSize="16sp"
-            android:textColor="@color/gray_600"
-            android:visibility="gone"
-            android:layout_marginTop="32dp"/>
-
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</LinearLayout>

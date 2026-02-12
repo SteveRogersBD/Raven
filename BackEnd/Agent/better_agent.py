@@ -40,6 +40,7 @@ load_dotenv()
 
 ORCHESTRATOR_MODEL = "gpt-5.2" 
 WORKER_MODEL = "gpt-4o" 
+REFINER_MODEL = "gpt-4o-mini"
 
 # Initialize LLMs
 try:
@@ -54,6 +55,12 @@ try:
     worker_llm = ChatOpenAI(model=WORKER_MODEL, api_key=os.getenv("OPEN_API_KEY"))
 except:
     worker_llm = ChatOpenAI(model="gpt-4o", api_key=os.getenv("OPEN_API_KEY"))
+
+try:
+    # Refiner (Prose Polish)
+    refiner_llm = ChatOpenAI(model=REFINER_MODEL, api_key=os.getenv("OPEN_API_KEY"))
+except:
+    refiner_llm = worker_llm
 
 
 
@@ -211,19 +218,33 @@ def node_check_video_metadata(state: AgentState):
     print(f"--- 🔍 Checking Video Metadata: {url} ---")
     
     meta = get_video_metadata.invoke(url)
-    if not meta or not meta.get("description"):
+    if not meta:
         return {"metadata_sufficient": "no"}
         
-    description = meta["description"]
+    description = meta.get("description", "")
     title = meta.get("title", "")
     full_text = f"Title: {title}\nDescription: {description}"
     
-    # Analyze with Worker LLM (Fast)
-    print(f"   Analyzing description length: {len(description)} chars")
+    # Extract metadata we need for the UI/Database
+    results = {"description": description}
+    
+    # 1. Use metadata thumbnail if available (works for TikTok, Instagram, X)
+    if meta.get("thumbnail"):
+        results["video_thumbnail"] = meta["thumbnail"]
+    
+    # 2. Fallback/Priority for YouTube to ensure high quality
+    if any(x in url.lower() for x in ["youtube.com", "youtu.be"]):
+        vid_id = extract_video_id.invoke(url)
+        if vid_id:
+            results["video_id"] = vid_id
+            # Metadata thumbnail might be low res on YT, so we prefer the mqdefault
+            if not results.get("video_thumbnail"):
+                results["video_thumbnail"] = f"https://img.youtube.com/vi/{vid_id}/mqdefault.jpg"
     
     # Heuristic: If description is very short, unlikely to be a recipe
     if len(description) < 100:
-        return {"metadata_sufficient": "no", "description": description}
+        results["metadata_sufficient"] = "no"
+        return results
 
     prompt = f"""
     Analyze this video description. Does it contain a FULL recipe with:
@@ -243,14 +264,20 @@ def node_check_video_metadata(state: AgentState):
         
         if result.get("is_complete"):
             print("   ✅ Full recipe found in description! Skipping video download.")
-            return {"metadata_sufficient": "yes", "description": full_text + "\n(Source: Video Description)", "text_content": full_text}
+            results.update({
+                "metadata_sufficient": "yes", 
+                "description": full_text + "\n(Source: Video Description)", 
+                "text_content": full_text
+            })
         else:
             print("   ❌ Description incomplete. Proceeding to video download.")
-            return {"metadata_sufficient": "no", "description": full_text}
+            results["metadata_sufficient"] = "no"
             
     except Exception as e:
         print(f"Error checking metadata: {e}")
-        return {"metadata_sufficient": "no"}
+        results["metadata_sufficient"] = "no"
+        
+    return results
  
 
     
@@ -509,6 +536,40 @@ def node_enrich_steps(state: AgentState):
         
     return {"enriched_steps": updated_steps}
 
+def node_polish_recipe(state: AgentState):
+    """Polishes recipe prose (capitalization, punctuation) using the refiner model."""
+    recipe = state.get("recipe")
+    if not recipe: return {}
+    
+    print(f"--- ✍️ Polishing Recipe Prose ({REFINER_MODEL}) ---")
+    
+    # We send the whole recipe as JSON to the refiner and ask it to fix just the text strings
+    recipe_json = recipe.model_dump_json()
+    
+    prompt = f"""
+    You are a professional food editor. Polish the text in this recipe JSON.
+    1. Capitalize the first letter of every sentence and every ingredient name.
+    2. Ensure proper punctuation (periods at the end of instructions).
+    3. Maintain a professional, clear tone.
+    4. DO NOT change the structure of the JSON.
+    5. DO NOT change measurements or ingredients themselves, just the formatting.
+    
+    Recipe JSON:
+    {recipe_json}
+    
+    Return ONLY the polished version as a raw JSON object. No Markdown.
+    """
+    
+    try:
+        response = refiner_llm.invoke([HumanMessage(content=prompt)])
+        content = response.content.replace("```json", "").replace("```", "").strip()
+        data = json.loads(content)
+        return {"recipe": Recipe(**data)}
+    except Exception as e:
+        print(f"Polishing error: {e}")
+        return {}
+
+
 def node_pre_enrichment(state: AgentState):
     return {}
 
@@ -543,8 +604,9 @@ graph.add_node("recipe_from_ingredients", node_recipe_from_ingredients)
 graph.add_node("recipe_from_dish_image", node_recipe_from_dish_image)
 graph.add_node("extract_from_text", node_extract_from_text)
 
-# 3. Formatting Nodes
+# 3. Formatting & Polishing Nodes
 graph.add_node("format_recipe", node_format_recipe)
+graph.add_node("polish_recipe", node_polish_recipe) # New Node!
 graph.add_node("enrich_ingredients", enrich_ingredients)
 graph.add_node("enrich_steps", node_enrich_steps)
 graph.add_node("merge_enrichment", node_merge_enrichment)
@@ -564,7 +626,7 @@ def route_scrape_logic(state):
     return "raw_text"
 
 graph.add_conditional_edges(START, route_input, {
-    "youtube": "get_youtube_data",
+    "youtube": "check_video_metadata",
     "video_file": "check_video_metadata",
     "image_file": "process_image_file",
     "website": "scrape_website"
@@ -582,7 +644,7 @@ graph.add_conditional_edges("check_video_metadata", route_video_metadata, {
 graph.add_edge("get_youtube_data", "extract_from_text")
 
 graph.add_conditional_edges("scrape_website", route_scrape_logic, {
-    "formatted": "pre_enrichment",
+    "formatted": "polish_recipe", # Route through refiner
     "raw_text": "extract_from_text"
 })
 
@@ -599,7 +661,10 @@ graph.add_edge("extract_text_from_video", "format_recipe")
 graph.add_edge("recipe_from_ingredients", "format_recipe")
 graph.add_edge("recipe_from_dish_image", "format_recipe")
 
-graph.add_edge("format_recipe", "pre_enrichment")
+# All formatted recipes go through the polish_recipe node
+graph.add_edge("format_recipe", "polish_recipe")
+graph.add_edge("polish_recipe", "pre_enrichment")
+
 graph.add_edge("pre_enrichment", "enrich_ingredients")
 graph.add_edge("pre_enrichment", "enrich_steps")
 graph.add_edge("enrich_ingredients", "merge_enrichment")
