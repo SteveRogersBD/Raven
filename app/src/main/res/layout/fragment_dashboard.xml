@@ -11,7 +11,7 @@
     android:orientation="vertical"
     android:padding="24dp">
 
-    <!-- Fixed Header -->
+    <!-- Stats Action Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -19,30 +19,16 @@
         android:gravity="center_vertical"
         android:layout_marginBottom="24dp">
 
-        <ImageView
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/app_logo"
-            android:background="@drawable/circle_bg_gray"
-            android:padding="8dp"/>
-
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvChefName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:text="Chef"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/tech_black"/>
 
-            <TextView
-                android:id="@+id/tvChefName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Chef"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="@color/tech_black"/>
-        </LinearLayout>
-        
         <ImageView
             android:id="@+id/btnEditProfile"
             android:layout_width="28dp"

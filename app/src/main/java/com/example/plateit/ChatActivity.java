@@ -48,10 +48,9 @@ public class ChatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
-        // Toolbar
-        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+        // Standardized AppBar Setup
+        com.example.plateit.utils.AppBarHelper.setup(this, "Chef Intelligence", true, R.drawable.ic_history,
+                this::showHistoryDialog);
 
         // Views
         rvChatMessages = findViewById(R.id.rvChatMessages);

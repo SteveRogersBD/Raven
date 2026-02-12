@@ -71,14 +71,16 @@ public class PantryFragment extends Fragment {
         progressBar = view.findViewById(R.id.progressBar);
         tvEmpty = view.findViewById(R.id.tvEmpty);
         ExtendedFloatingActionButton fabAdd = view.findViewById(R.id.fabAdd);
-        com.google.android.material.button.MaterialButton btnCookWithPantry = view.findViewById(R.id.btnCookWithPantry);
+
+        // Standardized AppBar Setup for Pantry
+        com.example.plateit.utils.AppBarHelper.setup(getActivity(), "Pantry", false, R.drawable.ic_cooking,
+                this::cookWithPantry);
 
         rvPantryItems.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new PantryAdapter(pantryTypeList, item -> deleteItem(item));
         rvPantryItems.setAdapter(adapter);
 
         fabAdd.setOnClickListener(v -> showAddOptions());
-        btnCookWithPantry.setOnClickListener(v -> cookWithPantry());
 
         sessionManager = new com.example.plateit.utils.SessionManager(requireContext());
         loadPantryItems(false);

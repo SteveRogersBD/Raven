@@ -49,13 +49,11 @@ public class HomeFragment extends Fragment {
         rvRecipes.setLayoutManager(new LinearLayoutManager(getContext()));
 
         EditText etPasteUrl = view.findViewById(R.id.etPasteUrl);
+        ImageView ivPlatform = view.findViewById(R.id.ivPlatform);
         ImageView btnPaste = view.findViewById(R.id.btnPaste);
         ImageView btnScan = view.findViewById(R.id.btnScan);
 
-        // Initial State
-        btnPaste.setColorFilter(getResources().getColor(R.color.gray_600));
-
-        // --- 1. Smart Link Detection Logic ---
+        // --- 1. Smart Link Detection Logic (Left Icon) ---
         etPasteUrl.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -64,24 +62,25 @@ public class HomeFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 String text = s.toString().toLowerCase();
-                btnPaste.clearColorFilter(); // Clear legacy ColorFilter
-                btnPaste.setImageTintList(null); // Clear modern ImageTintList
+                ivPlatform.setImageTintList(null); // Reset color filter if needed
 
                 if (text.contains("youtube.com") || text.contains("youtu.be")) {
-                    btnPaste.setImageResource(R.drawable.youtube);
+                    ivPlatform.setImageResource(R.drawable.youtube);
                 } else if (text.contains("instagram.com")) {
-                    btnPaste.setImageResource(R.drawable.instagram);
+                    ivPlatform.setImageResource(R.drawable.instagram);
                 } else if (text.contains("twitter.com") || text.contains("x.com")) {
-                    btnPaste.setImageResource(R.drawable.twitter);
+                    ivPlatform.setImageResource(R.drawable.twitter);
                 } else if (text.contains("facebook.com")) {
-                    btnPaste.setImageResource(R.drawable.facebook);
+                    ivPlatform.setImageResource(R.drawable.facebook);
+                } else if (text.contains("tiktok.com")) {
+                    ivPlatform.setImageResource(R.drawable.tiktok);
                 } else if (text.contains("http") || text.contains("www.")) {
-                    // Generic Link -> use the 'www' drawable
-                    btnPaste.setImageResource(R.drawable.www);
+                    ivPlatform.setImageResource(R.drawable.www);
                 } else {
-                    // Just text -> Revert to send icon with tech_black tint
-                    btnPaste.setImageResource(android.R.drawable.ic_menu_send);
-                    btnPaste.setColorFilter(getResources().getColor(R.color.tech_black));
+                    // Default generic icon
+                    ivPlatform.setImageResource(R.drawable.www);
+                    ivPlatform.setImageTintList(
+                            android.content.res.ColorStateList.valueOf(getResources().getColor(R.color.gray_600)));
                 }
             }
 

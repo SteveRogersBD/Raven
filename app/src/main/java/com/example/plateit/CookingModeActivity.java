@@ -123,6 +123,9 @@ public class CookingModeActivity extends AppCompatActivity {
         // bars
         setContentView(R.layout.activity_cooking_mode);
 
+        // Standardized AppBar Setup
+        com.example.plateit.utils.AppBarHelper.setup(this, "Cooking Mode", true);
+
         sessionManager = new com.example.plateit.utils.SessionManager(this);
         int existingSessionId = getIntent().getIntExtra("session_id", -1);
         int initialStep = getIntent().getIntExtra("initial_step", 0);
@@ -185,6 +188,7 @@ public class CookingModeActivity extends AppCompatActivity {
         tvRecipeName = findViewById(R.id.tvRecipeName);
         if (currentRecipe != null) {
             tvRecipeName.setText(currentRecipe.getName());
+            com.example.plateit.utils.AppBarHelper.setup(this, currentRecipe.getName(), true);
         }
 
         cvSourceCard = findViewById(R.id.cvSourceCard);

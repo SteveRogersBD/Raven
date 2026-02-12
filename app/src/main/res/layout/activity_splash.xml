@@ -4,8 +4,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:background="@color/plain_white"
-    android:padding="32dp">
+    android:background="@color/chef_orange"
+    android:padding="32dp"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="@color/plain_white">
 
     <!-- The Logo -->
     <ImageView
@@ -35,4 +43,5 @@
         android:layout_marginTop="24dp"
         android:background="@color/banana_yellow" />
 
+    </LinearLayout>
 </LinearLayout>

@@ -15,16 +15,19 @@
         
         <!-- Status Bar -->
         <item name="android:statusBarColor">@color/chef_orange</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <!-- Navigation Bar -->
-        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <!-- Navigation Bar (the very bottom system bar) -->
+        <item name="android:navigationBarColor">@color/chef_orange</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="O_MR1">false</item>
     </style>
 
     <style name="Theme.PlateIt" parent="Base.Theme.PlateIt" />
     
     <style name="Theme.PlateIt.BottomNav" parent="ThemeOverlay.Material3.DynamicColors.Light">
-        <item name="colorSecondaryContainer">@color/chef_orange_light</item>
-        <item name="colorOnSecondaryContainer">@color/chef_orange</item>
-        <item name="android:background">@color/chef_surface</item>
+        <item name="colorSecondaryContainer">#33FFFFFF</item> <!-- Subtle white highlight for pill -->
+        <item name="colorOnSecondaryContainer">#FFFFFF</item> <!-- White text/icon on pill -->
+        <item name="android:background">@color/chef_orange</item>
+        <item name="itemTextColor">@color/bottom_nav_colors</item>
+        <item name="itemIconTint">@color/bottom_nav_colors</item>
     </style>
 </resources>

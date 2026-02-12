@@ -22,6 +22,9 @@ public class SignInActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_in);
 
+        // Standardized AppBar Setup
+        com.example.plateit.utils.AppBarHelper.setup(this, "Sign In", false);
+
         // Check for existing session
         SessionManager sessionManager = new SessionManager(
                 SignInActivity.this);

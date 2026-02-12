@@ -20,6 +20,9 @@ public class BlogReaderActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_blog_reader);
 
+        // Standardized AppBar Setup
+        com.example.plateit.utils.AppBarHelper.setup(this, "Blog Article", true);
+
         String url = getIntent().getStringExtra("blog_url");
         if (url == null) {
             finish();

@@ -17,6 +17,9 @@ public class RecipeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_recipe);
 
+        // Standardized AppBar Setup
+        com.example.plateit.utils.AppBarHelper.setup(this, "Recipe Details", true);
+
         android.widget.TextView tvTitle = findViewById(R.id.tvRecipeTitle);
         android.widget.TextView tvTime = findViewById(R.id.tvRecipeTime);
         androidx.cardview.widget.CardView cvSourceCard = findViewById(R.id.cvSourceCard);
@@ -145,6 +148,7 @@ public class RecipeActivity extends AppCompatActivity {
             // Header
             if (getSupportActionBar() != null)
                 getSupportActionBar().hide();
+            com.example.plateit.utils.AppBarHelper.setup(this, recipe.getName(), true);
             tvTitle.setText(recipe.getName());
 
             tvTime.setText(recipe.getTotalTime() != null ? recipe.getTotalTime() : "N/A");

@@ -5,42 +5,19 @@
     android:layout_height="match_parent"
     android:background="@drawable/grad_sunrise">
     
-    <ImageView
-        android:id="@+id/imgLogoSmall"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="24dp"
-        android:src="@drawable/app_logo"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/tvAppName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:fontFamily="sans-serif-black"
-        android:text="PlateIt"
-        android:textColor="@color/tech_black"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@id/imgLogoSmall"
-        app:layout_constraintStart_toEndOf="@id/imgLogoSmall"
-        app:layout_constraintTop_toTopOf="@id/imgLogoSmall" />
-
     <!-- Hero Section -->
     <TextView
         android:id="@+id/tvHeroTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="32dp"
         android:fontFamily="sans-serif-bold"
         android:text="What's cooking?"
         android:textColor="@color/chef_orange"
         android:textSize="32sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/imgLogoSmall" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/tvHeroSubtitle"
@@ -74,6 +51,17 @@
             android:orientation="horizontal"
             android:paddingHorizontal="16dp">
 
+            <!-- Platform/Source Icon (Left, Unclickable) -->
+            <ImageView
+                android:id="@+id/ivPlatform"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/www"
+                app:tint="@color/gray_600"
+                android:clickable="false"
+                android:focusable="false" />
+
             <EditText
                 android:id="@+id/etPasteUrl"
                 android:layout_width="0dp"
@@ -86,32 +74,35 @@
                 android:textColor="@color/tech_black"
                 android:textSize="16sp" />
 
-            <!-- Divider -->
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="#EEE"
-                android:layout_marginHorizontal="8dp"/>
-
-            <!-- Action Icons -->
-            
-            <!-- Paste/Go Button -->
+            <!-- Permanent Search Button (Right) -->
             <ImageView
                 android:id="@+id/btnPaste"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:layout_marginEnd="16dp"
-                android:src="@android:drawable/ic_menu_send"
-                android:tooltipText="Go / Paste" />
+                android:src="@android:drawable/ic_menu_search"
+                app:tint="@color/tech_black"
+                android:tooltipText="Search" />
 
-            <!-- Camera (Vision) -->
+            <!-- Divider (Hidden) -->
+            <View
+                android:id="@+id/divider"
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:background="#EEE"
+                android:layout_marginHorizontal="8dp"
+                android:visibility="gone"/>
+
+            <!-- Action Icons (Legacy Hidden) -->
+            
+            <!-- Camera (Vision) - Hidden per user request -->
             <ImageView
                 android:id="@+id/btnScan"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_camera_alt"
                 app:tint="@color/gray_600"
-                android:tooltipText="Scan Ingredients" />
+                android:tooltipText="Scan Ingredients"
+                android:visibility="gone" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>

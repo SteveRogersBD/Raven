@@ -14,30 +14,29 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-
-        // Handle Window Insets (Apply to container so nav bar doesn't overlap)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.fragment_container), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0); // Don't pad bottom, let Nav handle it
-            return insets;
-        });
+        // Initialize AppBar
+        com.example.plateit.utils.AppBarHelper.setup(this, "Home", false);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_navigation);
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
+            String title = "";
             int itemId = item.getItemId();
 
             if (itemId == R.id.navigation_home) {
                 selectedFragment = new HomeFragment();
+                title = "Home";
             } else if (itemId == R.id.navigation_dashboard) {
                 selectedFragment = new DashboardFragment();
+                title = "Dashboard";
             } else if (itemId == R.id.navigation_pantry) {
                 selectedFragment = new PantryFragment();
+                title = "Pantry";
             }
 
             if (selectedFragment != null) {
+                com.example.plateit.utils.AppBarHelper.setup(this, title, false);
                 getSupportFragmentManager().beginTransaction()
                         .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
                         .replace(R.id.fragment_container, selectedFragment)

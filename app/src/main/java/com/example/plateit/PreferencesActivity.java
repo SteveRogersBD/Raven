@@ -38,6 +38,9 @@ public class PreferencesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_preferences);
 
+        // Standardized AppBar Setup
+        com.example.plateit.utils.AppBarHelper.setup(this, "Preferences", false);
+
         sessionManager = new com.example.plateit.utils.SessionManager(this);
 
         chipGroupPreferences = findViewById(R.id.chipGroupPreferences);

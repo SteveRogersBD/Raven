@@ -23,6 +23,9 @@ public class SignUpActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
 
+        // Standardized AppBar Setup
+        com.example.plateit.utils.AppBarHelper.setup(this, "Sign Up", true);
+
         com.example.plateit.utils.SessionManager sessionManager = new com.example.plateit.utils.SessionManager(
                 SignUpActivity.this);
 
