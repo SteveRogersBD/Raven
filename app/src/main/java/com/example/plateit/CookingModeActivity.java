@@ -463,7 +463,7 @@ public class CookingModeActivity extends AppCompatActivity {
                                     converted.add(new RecipeVideo(
                                             item.getTitle(), item.getUrl(), item.getThumbnail(), "", "", ""));
                                 }
-                                VideoAdapter adapter = new VideoAdapter(converted, video -> {
+                                VideoAdapter adapter = new VideoAdapter(converted, true, video -> {
                                     // Handle video click (e.g. open Intent)
                                     Intent intent = new Intent(Intent.ACTION_VIEW,
                                             android.net.Uri.parse(video.getLink()));

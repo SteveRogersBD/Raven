@@ -91,4 +91,12 @@ public interface AgentApiService {
         @retrofit2.http.GET("chat/history/{thread_id}")
         retrofit2.Call<java.util.List<com.example.plateit.responses.ChatHistoryResponse>> getChatHistory(
                         @retrofit2.http.Path("thread_id") String threadId);
+
+        @retrofit2.http.GET("users/stats/{user_id}")
+        retrofit2.Call<com.example.plateit.responses.UserStatsResponse> getUserStats(
+                        @retrofit2.http.Path("user_id") String userId);
+
+        @retrofit2.http.GET("users/profile/{user_id}")
+        retrofit2.Call<com.example.plateit.responses.AuthResponse> getUserProfile(
+                        @retrofit2.http.Path("user_id") String userId);
 }

@@ -60,7 +60,8 @@ public class SignInActivity extends AppCompatActivity {
                                 sessionManager.createLoginSession(
                                         response.body().getUserId(),
                                         response.body().getEmail(),
-                                        response.body().getUsername());
+                                        response.body().getUsername(),
+                                        response.body().getFullName());
 
                                 android.widget.Toast.makeText(SignInActivity.this, "Sign In Successful",
                                         android.widget.Toast.LENGTH_SHORT).show();

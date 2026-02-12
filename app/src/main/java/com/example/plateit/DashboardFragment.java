@@ -48,6 +48,11 @@ public class DashboardFragment extends Fragment {
     private TextView tvActiveTitle, tvActiveStep;
     private Button btnResume;
 
+    // Stats UI
+    private com.github.mikephil.charting.charts.PieChart chartSessions;
+    private TextView tvStatRecipes, tvStatDays, tvStatSessions;
+    private TextView tvChefName;
+
     public DashboardFragment() {
         // Required empty public constructor
     }
@@ -62,9 +67,17 @@ public class DashboardFragment extends Fragment {
 
         // Profile Section
         ImageView btnEdit = view.findViewById(R.id.btnEditProfile);
-        TextView tvChefName = view.findViewById(R.id.tvChefName);
+        tvChefName = view.findViewById(R.id.tvChefName);
+        setupChefName();
 
         btnEdit.setOnClickListener(v -> showEditProfileDialog(tvChefName));
+
+        // Stats UI
+        chartSessions = view.findViewById(R.id.chartSessions);
+        tvStatRecipes = view.findViewById(R.id.tvStatRecipes);
+        tvStatDays = view.findViewById(R.id.tvStatDays);
+        tvStatSessions = view.findViewById(R.id.tvStatSessions);
+        setupPieChart();
 
         // Cookbook Section
         rvCookbook = view.findViewById(R.id.rvCookbook);
@@ -78,6 +91,7 @@ public class DashboardFragment extends Fragment {
         rvSessions = view.findViewById(R.id.rvSessions);
         tvSessionsHeader = view.findViewById(R.id.tvSessionsHeader);
         rvSessions.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvSessions.setNestedScrollingEnabled(false);
         sessionAdapter = new com.example.plateit.adapters.CookingSessionAdapter(
                 new ArrayList<>(), new ArrayList<>(), this::onResumeSession);
         rvSessions.setAdapter(sessionAdapter);
@@ -97,6 +111,117 @@ public class DashboardFragment extends Fragment {
         fetchCookbook();
         fetchActiveSession();
         fetchHistory();
+        fetchUserStats();
+        setupChefName(); // Refresh in case it changed
+    }
+
+    private void setupChefName() {
+        String fullName = sessionManager.getFullName();
+        if (fullName != null && !fullName.isEmpty()) {
+            String firstName = fullName.split(" ")[0];
+            tvChefName.setText("Chef " + firstName);
+        } else {
+            // Fallback: fetch from API
+            tvChefName.setText("Chef");
+            fetchUserProfile();
+        }
+    }
+
+    private void fetchUserProfile() {
+        String userId = sessionManager.getUserId();
+        if (userId == null)
+            return;
+
+        RetrofitClient.getAgentService().getUserProfile(userId)
+                .enqueue(new Callback<com.example.plateit.responses.AuthResponse>() {
+                    @Override
+                    public void onResponse(Call<com.example.plateit.responses.AuthResponse> call,
+                            Response<com.example.plateit.responses.AuthResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            String fullName = response.body().getFullName();
+                            if (fullName != null && !fullName.isEmpty()) {
+                                sessionManager.setFullName(fullName);
+                                String firstName = fullName.split(" ")[0];
+                                if (tvChefName != null) {
+                                    tvChefName.setText("Chef " + firstName);
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<com.example.plateit.responses.AuthResponse> call, Throwable t) {
+                        // Fail silently
+                    }
+                });
+    }
+
+    private void setupPieChart() {
+        chartSessions.setUsePercentValues(true);
+        chartSessions.getDescription().setEnabled(false);
+        chartSessions.setExtraOffsets(5, 10, 5, 5);
+        chartSessions.setDragDecelerationFrictionCoef(0.95f);
+        chartSessions.setDrawHoleEnabled(true);
+        chartSessions.setHoleColor(android.graphics.Color.WHITE);
+        chartSessions.setTransparentCircleRadius(61f);
+        chartSessions.setEntryLabelColor(android.graphics.Color.BLACK);
+        chartSessions.setEntryLabelTextSize(12f);
+        chartSessions.getLegend().setEnabled(false);
+    }
+
+    private void fetchUserStats() {
+        String userId = sessionManager.getUserId();
+        if (userId == null)
+            return;
+
+        RetrofitClient.getAgentService().getUserStats(userId)
+                .enqueue(new Callback<com.example.plateit.responses.UserStatsResponse>() {
+                    @Override
+                    public void onResponse(Call<com.example.plateit.responses.UserStatsResponse> call,
+                            Response<com.example.plateit.responses.UserStatsResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            com.example.plateit.responses.UserStatsResponse stats = response.body();
+                            updateStatsUI(stats);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<com.example.plateit.responses.UserStatsResponse> call, Throwable t) {
+                        // Fail silently
+                    }
+                });
+    }
+
+    private void updateStatsUI(com.example.plateit.responses.UserStatsResponse stats) {
+        tvStatRecipes.setText(stats.getTotalRecipes() + " Recipes Saved");
+        tvStatDays.setText(stats.getActiveDays() + " Active Days");
+        tvStatSessions.setText(stats.getTotalSessions() + " Total Sessions");
+
+        if (stats.getTotalSessions() > 0) {
+            List<com.github.mikephil.charting.data.PieEntry> entries = new ArrayList<>();
+            if (stats.getFinishedSessions() > 0) {
+                entries.add(new com.github.mikephil.charting.data.PieEntry(stats.getFinishedSessions(), "Done"));
+            }
+            if (stats.getUnfinishedSessions() > 0) {
+                entries.add(new com.github.mikephil.charting.data.PieEntry(stats.getUnfinishedSessions(), "Progress"));
+            }
+
+            com.github.mikephil.charting.data.PieDataSet dataSet = new com.github.mikephil.charting.data.PieDataSet(
+                    entries, "");
+            dataSet.setColors(new int[] {
+                    android.graphics.Color.parseColor("#4CAF50"), // Green
+                    android.graphics.Color.parseColor("#FFC107") // Amber
+            });
+            dataSet.setSliceSpace(3f);
+            dataSet.setSelectionShift(5f);
+
+            com.github.mikephil.charting.data.PieData data = new com.github.mikephil.charting.data.PieData(dataSet);
+            data.setValueTextSize(10f);
+            data.setValueTextColor(android.graphics.Color.BLACK);
+
+            chartSessions.setData(data);
+            chartSessions.invalidate();
+        }
     }
 
     private void onResumeSession(com.example.plateit.responses.CookingSession session, CookbookEntry entry) {

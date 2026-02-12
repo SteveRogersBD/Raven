@@ -11,6 +11,7 @@ public class SessionManager {
     public static final String KEY_USER_ID = "userId";
     public static final String KEY_EMAIL = "email";
     public static final String KEY_USERNAME = "username";
+    public static final String KEY_FULL_NAME = "fullName";
     private static final String KEY_LAST_VIDEO_FETCH = "lastVideoFetchTime";
     private static final String KEY_LAST_PANTRY_FETCH = "lastPantryFetchTime";
 
@@ -24,11 +25,12 @@ public class SessionManager {
         editor = pref.edit();
     }
 
-    public void createLoginSession(String userId, String email, String username) {
+    public void createLoginSession(String userId, String email, String username, String fullName) {
         editor.putBoolean(IS_LOGGED_IN, true);
         editor.putString(KEY_USER_ID, userId);
         editor.putString(KEY_EMAIL, email);
         editor.putString(KEY_USERNAME, username);
+        editor.putString(KEY_FULL_NAME, fullName);
         editor.commit();
     }
 
@@ -38,6 +40,15 @@ public class SessionManager {
 
     public String getUserId() {
         return pref.getString(KEY_USER_ID, null);
+    }
+
+    public String getFullName() {
+        return pref.getString(KEY_FULL_NAME, null);
+    }
+
+    public void setFullName(String fullName) {
+        editor.putString(KEY_FULL_NAME, fullName);
+        editor.commit();
     }
 
     public void setOnboardingCompleted() {

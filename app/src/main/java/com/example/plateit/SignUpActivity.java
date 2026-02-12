@@ -59,7 +59,8 @@ public class SignUpActivity extends AppCompatActivity {
                                 sessionManager.createLoginSession(
                                         response.body().getUserId(),
                                         response.body().getEmail(),
-                                        response.body().getUsername());
+                                        response.body().getUsername(),
+                                        response.body().getFullName());
 
                                 android.widget.Toast.makeText(SignUpActivity.this, "Sign Up Successful",
                                         android.widget.Toast.LENGTH_SHORT).show();

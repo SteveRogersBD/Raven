@@ -4,10 +4,9 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
-    // Local Debug URL (Android Emulator uses 10.0.2.2 for localhost)
-    // private static final String BASE_URL =
-    // "https://plateit-backend-609208975469.us-central1.run.app/";
-    private static final String BASE_URL = "http://10.0.2.2:8080/";
+    // Cloud Run Base URL
+    private static final String BASE_URL = "https://plateit-backend-609208975469.us-central1.run.app/";
+//     private static final String BASE_URL = "http://10.0.2.2:8080/";
     private static Retrofit recipefit = null;
 
     public static RecipeApiService getService() {

@@ -41,7 +41,15 @@ class AuthResponse(BaseModel):
     user_id: uuid.UUID
     email: str
     username: str
+    full_name: Optional[str] = None
     message: str
+
+class UserStatsResponse(BaseModel):
+    total_recipes: int
+    total_sessions: int
+    finished_sessions: int
+    unfinished_sessions: int
+    active_days: int
 
 class PantryItemCreate(BaseModel):
     user_id: uuid.UUID
@@ -72,6 +80,7 @@ def signup(request: SignupRequest, session: Session = Depends(get_session)):
         user_id=new_user.id,
         email=new_user.email,
         username=new_user.username,
+        full_name=new_user.full_name,
         message="User created successfully"
     )
 
@@ -87,6 +96,7 @@ def signin(request: SigninRequest, session: Session = Depends(get_session)):
         user_id=user.id,
         email=user.email,
         username=user.username,
+        full_name=user.full_name,
         message="Login successful"
     )
 
@@ -126,6 +136,43 @@ def get_preferences(user_id: uuid.UUID, session: Session = Depends(get_session))
         raise HTTPException(status_code=404, detail="User not found")
         
     return {"preferences": user.preferences}
+
+@app.get("/users/stats/{user_id}", response_model=UserStatsResponse)
+def get_user_stats(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    # 1. Total Recipes in Cookbook
+    total_recipes = session.exec(select(Cookbook).where(Cookbook.user_id == user_id)).all()
+    
+    # 2. Total Sessions
+    all_sessions = session.exec(select(CookingSession).where(CookingSession.user_id == user_id)).all()
+    finished = [s for s in all_sessions if s.is_finished]
+    unfinished = [s for s in all_sessions if not s.is_finished]
+    
+    # 3. Active Days
+    # Combine created_at from Cookbook and last_updated from CookingSession
+    dates = {r.created_at.date() for r in total_recipes}
+    dates.update({s.last_updated.date() for s in all_sessions})
+    
+    return UserStatsResponse(
+        total_recipes=len(total_recipes),
+        total_sessions=len(all_sessions),
+        finished_sessions=len(finished),
+        unfinished_sessions=len(unfinished),
+        active_days=len(dates)
+    )
+
+@app.get("/users/profile/{user_id}", response_model=AuthResponse)
+def get_user_profile(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return AuthResponse(
+        user_id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        message="Profile fetched"
+    )
 
 
 # --- Video Recommendation Endpoint ---
