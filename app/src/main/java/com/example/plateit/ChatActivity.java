@@ -60,15 +60,13 @@ public class ChatActivity extends AppCompatActivity {
 
         // Setup RecyclerView
         messageList = new ArrayList<>();
-        // Add a welcome message
-        messageList.add(new ChatMessage(
-                "Hello! I'm your AI Chef. Ask me anything about cooking or show me your ingredients!", false));
+        // Add a welcome message if list is empty
+        if (messageList.isEmpty()) {
+            messageList.add(new ChatMessage(
+                    "Hello! I'm your AI Chef. Ask me anything about cooking or show me your ingredients!", false));
+        }
 
-        // Use standard layout manager, let the adapter / reversed layout handle
-        // inversion visually if needed
-        // Assuming XML has scaleY=-1 for inverted effect
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
-        layoutManager.setReverseLayout(true);
         layoutManager.setStackFromEnd(true);
 
         rvChatMessages.setLayoutManager(layoutManager);
@@ -89,9 +87,9 @@ public class ChatActivity extends AppCompatActivity {
 
         // 1. Create User Message UI
         ChatMessage userMsg = new ChatMessage(text, true, pendingImageUri);
-        messageList.add(0, userMsg);
-        chatAdapter.notifyItemInserted(0);
-        rvChatMessages.scrollToPosition(0);
+        messageList.add(userMsg);
+        chatAdapter.notifyItemInserted(messageList.size() - 1);
+        rvChatMessages.scrollToPosition(messageList.size() - 1);
 
         // 2. Prepare Data
         String imageBase64 = null;
@@ -117,10 +115,14 @@ public class ChatActivity extends AppCompatActivity {
         btnAttachImage.setColorFilter(getColor(R.color.gray_600));
 
         // 4. API Call
-        // Create Request (Empty recipe for general chat, step 0)
+        com.example.plateit.utils.SessionManager sessionManager = new com.example.plateit.utils.SessionManager(this);
+        String userId = sessionManager.getUserId();
+        String threadId = "chat_" + userId; // Unique thread per user for now
+
         com.example.plateit.requests.ChatRequest req = new com.example.plateit.requests.ChatRequest(
                 text,
-                "general_chat_thread",
+                threadId,
+                userId,
                 null, // No specific recipe context
                 0,
                 imageBase64);
@@ -144,15 +146,16 @@ public class ChatActivity extends AppCompatActivity {
                                     resp.getIngredientData(),
                                     resp.getVideoData());
 
-                            messageList.add(0, aiMsg);
-                            chatAdapter.notifyItemInserted(0);
-                            rvChatMessages.scrollToPosition(0);
+                            messageList.add(aiMsg);
+                            chatAdapter.notifyItemInserted(messageList.size() - 1);
+                            rvChatMessages.scrollToPosition(messageList.size() - 1);
 
                         } else {
                             ChatMessage errorMsg = new ChatMessage(
                                     "Sorry, I'm having trouble connecting to the kitchen.", false);
-                            messageList.add(0, errorMsg);
-                            chatAdapter.notifyItemInserted(0);
+                            messageList.add(errorMsg);
+                            chatAdapter.notifyItemInserted(messageList.size() - 1);
+                            rvChatMessages.scrollToPosition(messageList.size() - 1);
                         }
                     }
 
@@ -160,8 +163,82 @@ public class ChatActivity extends AppCompatActivity {
                     public void onFailure(retrofit2.Call<com.example.plateit.responses.ChatResponse> call,
                             Throwable t) {
                         ChatMessage errorMsg = new ChatMessage("Network error: " + t.getMessage(), false);
-                        messageList.add(0, errorMsg);
-                        chatAdapter.notifyItemInserted(0);
+                        messageList.add(errorMsg);
+                        chatAdapter.notifyItemInserted(messageList.size() - 1);
+                        rvChatMessages.scrollToPosition(messageList.size() - 1);
+                    }
+                });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(android.view.Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_chat, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(android.view.MenuItem item) {
+        if (item.getItemId() == R.id.action_history) {
+            showHistoryDialog();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showHistoryDialog() {
+        com.example.plateit.utils.SessionManager sm = new com.example.plateit.utils.SessionManager(this);
+        com.example.plateit.api.RetrofitClient.getAgentService().getChatSessions(sm.getUserId())
+                .enqueue(new retrofit2.Callback<List<com.example.plateit.models.ChatSession>>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<List<com.example.plateit.models.ChatSession>> call,
+                            retrofit2.Response<List<com.example.plateit.models.ChatSession>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            List<com.example.plateit.models.ChatSession> sessions = response.body();
+                            String[] titles = new String[sessions.size()];
+                            for (int i = 0; i < sessions.size(); i++) {
+                                titles[i] = sessions.get(i).getTitle() + " (" + sessions.get(i).getUpdatedAt() + ")";
+                            }
+
+                            new androidx.appcompat.app.AlertDialog.Builder(ChatActivity.this)
+                                    .setTitle("Chat History")
+                                    .setItems(titles, (dialog, which) -> {
+                                        loadChatHistory(sessions.get(which).getId());
+                                    })
+                                    .show();
+                        } else {
+                            Toast.makeText(ChatActivity.this, "No history found", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<List<com.example.plateit.models.ChatSession>> call,
+                            Throwable t) {
+                        Toast.makeText(ChatActivity.this, "Error fetching history", Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void loadChatHistory(String threadId) {
+        com.example.plateit.api.RetrofitClient.getAgentService().getChatHistory(threadId)
+                .enqueue(new retrofit2.Callback<List<com.example.plateit.responses.ChatHistoryResponse>>() {
+                    @Override
+                    public void onResponse(
+                            retrofit2.Call<List<com.example.plateit.responses.ChatHistoryResponse>> call,
+                            retrofit2.Response<List<com.example.plateit.responses.ChatHistoryResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            messageList.clear();
+                            for (com.example.plateit.responses.ChatHistoryResponse item : response.body()) {
+                                messageList.add(new ChatMessage(item.getContent(), "user".equals(item.getSender())));
+                            }
+                            chatAdapter.notifyDataSetChanged();
+                            rvChatMessages.scrollToPosition(messageList.size() - 1);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<List<com.example.plateit.responses.ChatHistoryResponse>> call,
+                            Throwable t) {
+                        Toast.makeText(ChatActivity.this, "Failed to load history", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

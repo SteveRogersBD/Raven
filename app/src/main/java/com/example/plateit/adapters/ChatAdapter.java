@@ -49,13 +49,20 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+    private java.util.Set<Integer> animatedPositions = new java.util.HashSet<>();
+
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ChatMessage message = messages.get(position);
         if (holder instanceof UserViewHolder) {
             ((UserViewHolder) holder).bind(message);
         } else {
-            ((AIViewHolder) holder).bind(message);
+            AIViewHolder aiHolder = (AIViewHolder) holder;
+            boolean shouldAnimate = !message.isUser() && !animatedPositions.contains(position);
+            aiHolder.bind(message, shouldAnimate);
+            if (shouldAnimate) {
+                animatedPositions.add(position);
+            }
         }
     }
 
@@ -97,8 +104,14 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             rvVideoList = itemView.findViewById(R.id.rvVideoList);
         }
 
-        void bind(ChatMessage message) {
-            tvMessage.setText(message.getMessage());
+        private android.os.Handler handler = new android.os.Handler();
+
+        void bind(ChatMessage message, boolean animate) {
+            if (animate) {
+                animateText(message.getMessage());
+            } else {
+                tvMessage.setText(message.getMessage());
+            }
 
             // Reset Visibility
             rvRecipeList.setVisibility(View.GONE);
@@ -137,11 +150,100 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     converted.add(new RecipeVideo(
                             item.getTitle(), item.getUrl(), item.getThumbnail(), "", "", ""));
                 }
-                rvVideoList.setAdapter(new VideoAdapter(converted, video -> {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(video.getLink()));
-                    itemView.getContext().startActivity(intent);
-                }));
+                // Pass true for isChatMode
+                VideoAdapter videoAdapter = new VideoAdapter(converted, video -> {
+                    showVideoOptionsSheet(itemView.getContext(), video);
+                });
+                videoAdapter.setChatMode(true);
+                rvVideoList.setAdapter(videoAdapter);
             }
+        }
+
+        private void animateText(String text) {
+            final String fullText = text;
+            tvMessage.setText("");
+            new Thread(() -> {
+                for (int i = 0; i <= fullText.length(); i++) {
+                    final String partialText = fullText.substring(0, i);
+                    handler.post(() -> tvMessage.setText(partialText));
+                    try {
+                        Thread.sleep(15); // Adjust for speed
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }
+
+        private void showVideoOptionsSheet(android.content.Context context, RecipeVideo video) {
+            com.google.android.material.bottomsheet.BottomSheetDialog sheet = new com.google.android.material.bottomsheet.BottomSheetDialog(
+                    context);
+            View view = android.view.LayoutInflater.from(context).inflate(R.layout.dialog_video_options, null);
+            sheet.setContentView(view);
+
+            android.widget.ImageView imgThumbnail = view.findViewById(R.id.imgVideoThumbnail);
+            android.widget.TextView tvTitle = view.findViewById(R.id.tvVideoTitle);
+            android.widget.TextView tvChannel = view.findViewById(R.id.tvVideoChannel);
+            View btnStartCooking = view.findViewById(R.id.btnExtractRecipe);
+            View btnWatch = view.findViewById(R.id.btnWatchVideo);
+
+            tvTitle.setText(video.getTitle());
+            tvChannel.setText(video.getChannel());
+
+            if (video.getThumbnail() != null && !video.getThumbnail().isEmpty()) {
+                com.squareup.picasso.Picasso.get().load(video.getThumbnail()).into(imgThumbnail);
+            }
+
+            btnStartCooking.setOnClickListener(v -> {
+                sheet.dismiss();
+                extractAndStartRecipe(context, video.getLink());
+            });
+
+            btnWatch.setOnClickListener(v -> {
+                sheet.dismiss();
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(video.getLink()));
+                context.startActivity(intent);
+            });
+
+            sheet.show();
+        }
+
+        private void extractAndStartRecipe(android.content.Context context, String url) {
+            android.widget.Toast.makeText(context, "Extracting recipe from video...", android.widget.Toast.LENGTH_SHORT)
+                    .show();
+
+            com.example.plateit.requests.VideoRequest req = new com.example.plateit.requests.VideoRequest(url);
+            com.example.plateit.api.RetrofitClient.getService().extractRecipe(req)
+                    .enqueue(new retrofit2.Callback<com.example.plateit.responses.RecipeResponse>() {
+                        @Override
+                        public void onResponse(retrofit2.Call<com.example.plateit.responses.RecipeResponse> call,
+                                retrofit2.Response<com.example.plateit.responses.RecipeResponse> response) {
+                            if (response.isSuccessful() && response.body() != null) {
+                                // Once extracted, we can either show another preview or jump directly.
+                                // User said "Start Cooking" so let's jump if valid.
+                                com.example.plateit.responses.RecipeResponse resp = response.body();
+                                com.example.plateit.models.Recipe recipe = new com.example.plateit.models.Recipe(
+                                        resp.getName(), resp.getSteps(), resp.getIngredients(), resp.getSourceUrl(),
+                                        resp.getSourceImage());
+
+                                Intent intent = new Intent(context, com.example.plateit.RecipeActivity.class);
+                                String json = new com.google.gson.Gson().toJson(resp);
+                                intent.putExtra("recipe_json", json);
+                                context.startActivity(intent);
+                            } else {
+                                android.widget.Toast.makeText(context, "Failed to extract recipe",
+                                        android.widget.Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(retrofit2.Call<com.example.plateit.responses.RecipeResponse> call,
+                                Throwable t) {
+                            android.widget.Toast
+                                    .makeText(context, "Error: " + t.getMessage(), android.widget.Toast.LENGTH_SHORT)
+                                    .show();
+                        }
+                    });
         }
 
         private void showRecipePreviewSheet(android.content.Context context,

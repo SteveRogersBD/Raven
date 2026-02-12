@@ -4,6 +4,7 @@ from langchain_core.tools import tool
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
 import time
+from duckduckgo_search import DDGS
 import google.generativeai as genai
 from dotenv import load_dotenv
 
@@ -51,8 +52,43 @@ def pexels_image_search(query: str):
 @tool
 def google_search(query: str):
     """
-    Performs a general web search using Google (via SerpApi).
+    Performs a general web search using DuckDuckGo.
     Useful for finding cooking tips, food history, or general questions not covered by Spoonacular.
+    """
+    try:
+        results = []
+        with DDGS() as ddgs:
+            for r in ddgs.text(query, max_results=5):
+                title = r.get('title', 'No Title')
+                link = r.get('href', 'No Link')
+                snippet = r.get('body', 'No Snippet')
+                results.append(f"Title: {title}\nLink: {link}\nSnippet: {snippet}")
+        
+        if not results:
+            return "No good search results found."
+            
+        return "\n\n".join(results)
+    except Exception as e:
+        return f"Error performing search: {e}"
+
+@tool
+def google_image_search(query: str):
+    """
+    Finds an image URL for a specific food item or dish using DuckDuckGo Images.
+    """
+    try:
+        with DDGS() as ddgs:
+            for r in ddgs.images(query, max_results=1):
+                return r.get('image')
+        return "No image found."
+    except Exception as e:
+        return f"Error searching images: {e}"
+
+@tool
+def serp_google_search(query: str):
+    """
+    Performs a general web search using Google (via SerpApi).
+    LEGACY: Not currently used by the agent default.
     """
     api_key = os.getenv("SERP_API_KEY")
     if not api_key:
@@ -77,11 +113,7 @@ def google_search(query: str):
                 title = item.get('title', 'No Title')
                 link = item.get('link', 'No Link')
                 snippet = item.get('snippet', 'No Snippet')
-                thumbnail = item.get('thumbnail')
-                if thumbnail:
-                    results.append(f"Title: {title}\nLink: {link}\nImage: {thumbnail}\nSnippet: {snippet}")
-                else:
-                    results.append(f"Title: {title}\nLink: {link}\nSnippet: {snippet}")
+                results.append(f"Title: {title}\nLink: {link}\nSnippet: {snippet}")
         
         if not results:
             return "No good search results found."
@@ -91,9 +123,10 @@ def google_search(query: str):
         return f"Error performing search: {e}"
 
 @tool
-def google_image_search(query: str):
+def serp_google_image_search(query: str):
     """
-    Finds an image URL for a specific food item or dish using Google Images.
+    Finds an image URL for a specific food item or dish using Google Images (via SerpApi).
+    LEGACY: Not currently used by the agent default.
     """
     api_key = os.getenv("SERP_API_KEY")
     if not api_key:
@@ -113,12 +146,9 @@ def google_image_search(query: str):
         data = response.json()
         
         if "images_results" in data and len(data["images_results"]) > 0:
-            # Return the original image URL
             return data["images_results"][0].get("original")
-        else:
-            return "No image found."
+        return "No image found."
     except Exception as e:
-        # Graceful failure
         return f"Error searching images: {e}"
 
 # --- Spoonacular Tools ---
@@ -434,7 +464,41 @@ def extract_video_id(url: str):
 @tool
 def get_youtube_transcript(video_id: str):
     """
+    Fetches the transcript of a YouTube video using the youtube-transcript-api.
+    """
+    from youtube_transcript_api import YouTubeTranscriptApi
+    try:
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        return "\n".join([t["text"] for t in transcript_list])
+    except Exception as e:
+        return f"Error fetching transcript: {e}"
+
+@tool
+def get_youtube_description(video_id: str):
+    """
+    Fetches the description of a YouTube video using the official Google YouTube Data API.
+    """
+    from googleapiclient.discovery import build
+    api_key = os.getenv("YT_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        return "Error: YT_API_KEY or GOOGLE_API_KEY not set."
+
+    try:
+        youtube = build('youtube', 'v3', developerKey=api_key)
+        request = youtube.videos().list(part="snippet", id=video_id)
+        response = request.execute()
+        
+        if response.get("items"):
+            return response["items"][0]["snippet"].get("description", "No description found.")
+        return "No video found with that ID."
+    except Exception as e:
+        return f"Error fetching description: {e}"
+
+@tool
+def serp_youtube_transcript(video_id: str):
+    """
     Fetches the transcript of a YouTube video using SerpApi.
+    LEGACY: Not currently used by the agent default.
     """
     api_key = os.getenv("SERP_API_KEY")
     if not api_key:
@@ -453,15 +517,15 @@ def get_youtube_transcript(video_id: str):
         if "transcript" in data:
             transcripts = [t["snippet"] for t in data["transcript"]]
             return "\n".join(transcripts)
-        else:
-            return "No transcript found."
+        return "No transcript found."
     except Exception as e:
         return f"Error fetching transcript: {e}"
 
 @tool
-def get_youtube_description(video_id: str):
+def serp_youtube_description(video_id: str):
     """
     Fetches the description of a YouTube video using SerpApi.
+    LEGACY: Not currently used by the agent default.
     """
     api_key = os.getenv("SERP_API_KEY")
     if not api_key:

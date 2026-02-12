@@ -401,9 +401,13 @@ public class CookingModeActivity extends AppCompatActivity {
             imageBase64 = android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP);
         }
 
+        String userId = sessionManager.getUserId();
+        String threadId = (sessionId != -1) ? "cooking_" + sessionId : "chat_" + userId;
+
         com.example.plateit.requests.ChatRequest req = new com.example.plateit.requests.ChatRequest(
                 query,
-                "demo_thread_id",
+                threadId,
+                userId,
                 currentRecipe,
                 currentStepIndex,
                 imageBase64);

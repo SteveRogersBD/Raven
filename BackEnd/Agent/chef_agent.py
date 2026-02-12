@@ -1,11 +1,10 @@
 import os
 from typing import Annotated, Literal, TypedDict
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-
 from better_agent import Recipe
 from tools import (
     search_recipes, search_by_nutrients, find_by_ingredients,
@@ -17,8 +16,6 @@ from schemas import AgentResponse
 from dotenv import load_dotenv
 
 load_dotenv()
-
-# Keys should be provided via environment variables.
 
 # --- 1. State Definition ---
 class AgentState(TypedDict):
@@ -36,12 +33,14 @@ tools = [
      create_recipe_card, google_search, google_image_search, search_youtube
 ]
 
-# The "Chef" model
-llm = ChatGoogleGenerativeAI(model="gemini-3-flash-preview", temperature=0)
+# The "Chef" model - Switched to GPT-4o for speed
+llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=os.getenv("OPEN_API_KEY"))
 llm_with_tools = llm.bind_tools(tools)
 
-# The "Waiter" model (Structural output)
-response_generator = llm.with_structured_output(AgentResponse)
+# The "Waiter" model - Switched to GPT-4o-mini for clean, fast formatting
+REFINER_MODEL = "gpt-4o-mini"
+waiter_llm = ChatOpenAI(model=REFINER_MODEL, temperature=0, api_key=os.getenv("OPEN_API_KEY"))
+response_generator = waiter_llm.with_structured_output(AgentResponse)
 
 # --- 3. Nodes ---
 
@@ -71,17 +70,16 @@ def chef_node(state: AgentState):
     elif isinstance(state.get("current_step"), str):
         step_context = state.get("current_step")
 
-    # System Prompt for Context
+    # System Prompt for Context & Tool Routing
     system_msg = SystemMessage(content=f"""
-    You are an expert Chef Assistant guiding a user through a recipe.
-    
-    CURRENT SITUATION:
-    The user is working on: "{step_context}"
+    You are an expert Chef Assistant for the PlateIt App.
+    User is at: "{step_context}".
     
     YOUR JOB:
-    1. Answer the user's question based on this step context.
-    2. If the user sends an IMAGE, analyze it carefully (doneness, texture, mistakes).
-    3. KEEP ANSWERS SHORT (1-2 sentences) and conversational. The user is cooking and listening to you via voice.
+    1. Answer the user's question based on tool results.
+    2. KEEP ANSWERS SHORT (1-2 sentences).
+    3. If you find recipes/videos, just say "I found some great options for you!"
+    4. NEVER put URLs, thumbnails, or raw tool lists in your text response.
     """)
     
     # --- Multimodal Message Construction ---
@@ -93,10 +91,6 @@ def chef_node(state: AgentState):
     
     if image_b64:
         print("--- Chef Node: Attaching Image to Prompt ---")
-        # Structure the message content as a list for LangChain Google integration
-        # text + image_url (data scheme)
-        
-        # We replace the last text-only message with a multimodal one
         content_parts = [
             {"type": "text", "text": last_user_msg.content},
             {
@@ -106,10 +100,6 @@ def chef_node(state: AgentState):
         ]
         
         multimodal_msg = HumanMessage(content=content_parts)
-        
-        # Replace the last message in history with our new multimodal one
-        # Note: In LangGraph, we can't easily 'replace' inside the list passed to invoke(messages) 
-        # unless we reconstruct it.
         history = [system_msg] + input_messages[:-1] + [multimodal_msg]
         
     else:
@@ -125,10 +115,14 @@ def waiter_node(state: AgentState):
     """
     system_prompt = SystemMessage(content="""
     You are the 'Waiter' for the PlateIt App.
-    Format the Chef's response for the mobile app.
+    Format the Chef's response into the 'AgentResponse' structure.
     
-    1. 'chat_bubble': The text to behave displayed and SPOKEN by the TTS engine. Keep it natural.
-    2. 'ui_component': If the user asked for a timer, unit conversion, or image, specify it here (optional).
+    CRITICAL RULES:
+    1. 'chat_bubble': Friendly, polished prose. 
+       - NEVER include raw URLs, thumbnails, or source names here.
+       - If the Chef found data (recipes, videos), just mention you found them.
+    2. Extract all recipes, ingredients, or videos into the structured data fields.
+    3. The mobile app will show the rich cards; the bubble only shows the chat.
     """)
     
     messages = [system_prompt] + state["messages"]

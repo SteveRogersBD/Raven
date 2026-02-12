@@ -82,6 +82,7 @@ class Recipe(BaseModel):
     name: str = Field(description="Name of the recipe")
     steps: list[RecipeStep] = Field(description="List of cooking steps")
     ingredients: list[Ingredient] = Field(description="List of ingredients")
+    total_time: str | None = Field(default=None, description="Total preparation and cooking time, e.g. '45 mins'")
     source: str | None = Field(default=None, description="URL of the original recipe source (e.g. YouTube video, Blog URL)")
     source_image: str | None = Field(default=None, description="URL of the source image/thumbnail")
 
@@ -209,7 +210,8 @@ def node_scrape_website(state: AgentState):
         for step in analyzed[0].get('steps', []):
             steps.append(RecipeStep(instruction=step.get('step', '')))
             
-    recipe = Recipe(name=name, steps=steps, ingredients=ingredients, source=url, source_image=source_image)
+    total_time = f"{response.get('readyInMinutes', 0)} mins"
+    recipe = Recipe(name=name, steps=steps, ingredients=ingredients, total_time=total_time, source=url, source_image=source_image)
     return {"recipe": recipe} 
 
 def node_check_video_metadata(state: AgentState):
@@ -321,7 +323,7 @@ def node_extract_text_from_video(state: AgentState):
 
         # Use Gemini for Video Understanding
         model = genai.GenerativeModel('gemini-3-flash-preview') 
-        prompt = "You are an expert chef. Watch this video and write down the full recipe with ingredients and steps."
+        prompt = "You are an expert chef. Watch this video and write down the full recipe with a clear name, ingredients with amounts, instructions, and an estimated total_time (e.g. '30 mins')."
         result = model.generate_content([video_file, prompt])
         
         genai.delete_file(video_file.name)
@@ -391,10 +393,10 @@ def node_recipe_from_ingredients(state: AgentState):
     
     if search_results and "No recipes found" not in search_results:
         context = f"Ingredients available: {ing_str}.\n\nPotential Recipes Found:\n{search_results}"
-        prompt = "Using the available ingredients and valid matches, create a full detailed recipe for the best match. IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'whisking eggs', 'chopping carrots')."
+        prompt = "Using the available ingredients and valid matches, create a full detailed recipe for the best match. Include a name, ingredients, steps, and a 'total_time' estimate. IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'whisking eggs', 'chopping carrots')."
     else:
         context = f"Ingredients available: {ing_str}."
-        prompt = "Create a creative and delicious recipe using ONLY these ingredients (and basic pantry items). IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'sauteing onions', 'boiling pasta')."
+        prompt = "Create a creative and delicious recipe using ONLY these ingredients (and basic pantry items). Include a name, ingredients, steps, and a 'total_time' estimate. IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'sauteing onions', 'boiling pasta')."
         
     result = orchestrator_llm.invoke([
         SystemMessage(content="You are an expert chef."),
@@ -413,7 +415,7 @@ def node_recipe_from_dish_image(state: AgentState):
     
     result = orchestrator_llm.invoke([
         SystemMessage(content="You are an expert chef."),
-        HumanMessage(content=f"The user provided an image of: {description}. Provide a complete, authentic recipe for this dish. IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'simmering soup', 'grating cheese').")
+        HumanMessage(content=f"The user provided an image of: {description}. Provide a complete, authentic recipe for this dish including name, total_time estimate, ingredients and steps. IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'simmering soup', 'grating cheese').")
     ])
     
     return {"raw_recipe_text": result.content}
@@ -433,7 +435,7 @@ def node_extract_from_text(state: AgentState):
     
     result = orchestrator_llm.invoke([
         SystemMessage(content="You are an expert chef."),
-        HumanMessage(content=f"Based on: {content}. Create a detailed recipe with ingredients and steps. IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'baking bread', 'chopping herbs').")
+        HumanMessage(content=f"Based on: {content}. Create a detailed recipe with a clear name, total_time estimate, ingredients and steps. IMPORTANT: For every step, you MUST generate a 'visual_query' string (3-5 words) that describes the action for an image search (e.g. 'baking bread', 'chopping herbs').")
     ])
     return {"raw_recipe_text": result.content}
 
@@ -552,7 +554,7 @@ def node_polish_recipe(state: AgentState):
     2. Ensure proper punctuation (periods at the end of instructions).
     3. Maintain a professional, clear tone.
     4. DO NOT change the structure of the JSON.
-    5. DO NOT change measurements or ingredients themselves, just the formatting.
+    5. DO NOT change measurements, ingredients, or the total_time value, just the formatting of prose.
     
     Recipe JSON:
     {recipe_json}

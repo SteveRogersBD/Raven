@@ -16,6 +16,11 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
 
     private List<RecipeVideo> videoList;
     private OnVideoClickListener listener;
+    private boolean isChatMode = false;
+
+    public void setChatMode(boolean chatMode) {
+        this.isChatMode = chatMode;
+    }
 
     public interface OnVideoClickListener {
         void onVideoClick(RecipeVideo video);
@@ -29,21 +34,31 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
     @NonNull
     @Override
     public VideoViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_video_card, parent, false);
-        return new VideoViewHolder(view);
+        int layoutId = isChatMode ? R.layout.item_chat_rich_card : R.layout.item_video_card;
+        View view = LayoutInflater.from(parent.getContext()).inflate(layoutId, parent, false);
+        return new VideoViewHolder(view, isChatMode);
     }
 
     @Override
     public void onBindViewHolder(@NonNull VideoViewHolder holder, int position) {
         RecipeVideo video = videoList.get(position);
         holder.title.setText(video.getTitle());
-        holder.time.setText(video.getLength() != null ? video.getLength() : "");
+
+        if (isChatMode) {
+            holder.badge.setText("VIDEO");
+            holder.badge.setVisibility(View.VISIBLE);
+            holder.footer.setText(video.getLength() != null ? video.getLength() : "Watch");
+        } else {
+            if (holder.time != null) {
+                holder.time.setText(video.getLength() != null ? video.getLength() : "");
+            }
+        }
 
         // Load thumbnail using Picasso
         if (video.getThumbnail() != null && !video.getThumbnail().isEmpty()) {
             Picasso.get()
                     .load(video.getThumbnail())
-                    .placeholder(R.drawable.ic_launcher_background) // Consider adding a proper placeholder drawable
+                    .placeholder(R.drawable.ic_launcher_background)
                     .error(R.drawable.ic_launcher_background)
                     .into(holder.thumbnail);
         }
@@ -67,14 +82,21 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.VideoViewHol
     }
 
     public static class VideoViewHolder extends RecyclerView.ViewHolder {
-        TextView title, time;
+        TextView title, time, badge, footer;
         ImageView thumbnail;
 
-        public VideoViewHolder(@NonNull View itemView) {
+        public VideoViewHolder(@NonNull View itemView, boolean isChatMode) {
             super(itemView);
-            title = itemView.findViewById(R.id.videoTitle);
-            time = itemView.findViewById(R.id.videoTime);
-            thumbnail = itemView.findViewById(R.id.videoThumbnail);
+            if (isChatMode) {
+                title = itemView.findViewById(R.id.tvCardTitle);
+                badge = itemView.findViewById(R.id.tvCardBadge);
+                footer = itemView.findViewById(R.id.tvCardFooter);
+                thumbnail = itemView.findViewById(R.id.imgCardThumbnail);
+            } else {
+                title = itemView.findViewById(R.id.videoTitle);
+                time = itemView.findViewById(R.id.videoTime);
+                thumbnail = itemView.findViewById(R.id.videoThumbnail);
+            }
         }
     }
 }

@@ -29,7 +29,7 @@ public class RecipeCardAdapter extends RecyclerView.Adapter<RecipeCardAdapter.Vi
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_blog_card, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat_rich_card, parent, false);
         return new ViewHolder(view);
     }
 
@@ -42,13 +42,13 @@ public class RecipeCardAdapter extends RecyclerView.Adapter<RecipeCardAdapter.Vi
         });
 
         holder.tvTitle.setText(recipe.getTitle());
+        holder.tvBadge.setText("RECIPE");
+        holder.tvBadge.setVisibility(View.VISIBLE);
 
-        // Repurpose Category for metadata if available
         if (recipe.getReadyInMinutes() != null) {
-            holder.tvCategory.setText(recipe.getReadyInMinutes() + " mins");
-            holder.tvCategory.setVisibility(View.VISIBLE);
+            holder.tvFooter.setText(recipe.getReadyInMinutes() + " mins");
         } else {
-            holder.tvCategory.setVisibility(View.GONE);
+            holder.tvFooter.setText("View Details");
         }
 
         if (recipe.getImageUrl() != null && !recipe.getImageUrl().isEmpty()) {
@@ -67,14 +67,16 @@ public class RecipeCardAdapter extends RecyclerView.Adapter<RecipeCardAdapter.Vi
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView imgThumbnail;
-        TextView tvCategory;
+        TextView tvBadge;
         TextView tvTitle;
+        TextView tvFooter;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            imgThumbnail = itemView.findViewById(R.id.imgBlogThumbnail);
-            tvCategory = itemView.findViewById(R.id.tvBlogCategory);
-            tvTitle = itemView.findViewById(R.id.tvBlogTitle);
+            imgThumbnail = itemView.findViewById(R.id.imgCardThumbnail);
+            tvBadge = itemView.findViewById(R.id.tvCardBadge);
+            tvTitle = itemView.findViewById(R.id.tvCardTitle);
+            tvFooter = itemView.findViewById(R.id.tvCardFooter);
         }
     }
 }

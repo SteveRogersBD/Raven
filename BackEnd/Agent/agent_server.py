@@ -299,33 +299,50 @@ def extract_recipe_image(file: UploadFile = File(...)):
          print(f"Error processing image: {e}")
          raise HTTPException(status_code=500, detail=str(e))
 
-# --- New Cooking Chat ---
 from chef_agent import graph as chef_workflow
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from typing import Dict, Any
 
 # --- New Cooking Chat ---
 class ChatRequest(BaseModel):
     message: str
     thread_id: str
+    user_id: Optional[uuid.UUID] = None
     recipe: Optional[Dict[str, Any]] = None # Full recipe object, optional for general chat
     current_step: int # 0-indexed step
     image_data: Optional[str] = None # Base64 encoded image
 
+from models import ChatSession, Message
+
 @app.post("/chat")
-def chat_endpoint(request: ChatRequest):
-    print(f"--- Chat Request: {request.message} (Step {request.current_step}) ---")
+def chat_endpoint(request: ChatRequest, session: Session = Depends(get_session)):
+    print(f"--- Chat Request: {request.message} (Thread: {request.thread_id}) ---")
     
-    # 1. Construct State
-    # Convert dict back to Recipe object logic is handled by Pydantic inside the node usually,
-    # but since our AgentState expects a 'Recipe' object (Pydantic model) and we get a Dict,
-    # we might need to rely on the node to handle it or convert it here.
-    # The chef_node currently does: recipe = state.get("recipe")
-    # We should pass the dict, and let's ensure chef_node handles dict access OR convert it here.
-    # For simplicity, we pass the dict and if our chef_agent expects a Pydantic object, we convert it there 
-    # OR we convert it here.
-    # Let's convert it here for type safety if better_agent is available.
+    # 1. Manage Session & History
+    # Ensure session exists
+    chat_sess = session.get(ChatSession, request.thread_id)
+    if not chat_sess and request.user_id:
+        chat_sess = ChatSession(id=request.thread_id, user_id=request.user_id, title="New Chat")
+        session.add(chat_sess)
+        session.commit()
     
+    # Load History (last 10 messages)
+    history_msgs = []
+    if chat_sess:
+        db_msgs = session.exec(
+            select(Message)
+            .where(Message.session_id == request.thread_id)
+            .order_by(Message.created_at.desc())
+            .limit(10)
+        ).all()
+        # Sort by oldest first for LangChain
+        for m in reversed(db_msgs):
+            if m.sender == "user":
+                history_msgs.append(HumanMessage(content=m.content))
+            else:
+                history_msgs.append(AIMessage(content=m.content))
+    
+    # 2. Construct Current State
     from better_agent import Recipe
     recipe_obj = None
     if request.recipe:
@@ -335,26 +352,43 @@ def chat_endpoint(request: ChatRequest):
             print(f"Warning: Could not parse recipe object: {e}")
             recipe_obj = None
 
+    # messages list = history + current human message
+    current_msg_list = history_msgs + [HumanMessage(content=request.message)]
+
     initial_state = {
-        "messages": [HumanMessage(content=request.message)],
+        "messages": current_msg_list,
         "recipe": recipe_obj,
         "current_step": request.current_step,
         "image_data": request.image_data
     }
     
-    # 2. Invoke Chef Agent
+    # 3. Invoke Chef Agent
     try:
         final_state = chef_workflow.invoke(initial_state)
         
-        # 3. Extract Response
-        # The waiter node puts the JSON string in the last message's content
+        # 4. Extract Response
         last_message = final_state["messages"][-1]
         response_json_str = last_message.content
         
-        # We assume it's valid JSON because Waiter guarantees it (mostly)
+        # Save to DB
+        # User Message
+        session.add(Message(session_id=request.thread_id, sender="user", content=request.message))
+        
+        # AI Response
         import json
         response_data = json.loads(response_json_str)
+        ai_display_text = response_data.get("chat_bubble", "Here you go!")
         
+        session.add(Message(session_id=request.thread_id, sender="ai", content=ai_display_text))
+        
+        # Update Session Metadata
+        if chat_sess:
+            chat_sess.updated_at = datetime.utcnow()
+            if chat_sess.title == "New Chat":
+                chat_sess.title = (request.message[:30] + '...') if len(request.message) > 30 else request.message
+            session.add(chat_sess)
+            
+        session.commit()
         return response_data
         
     except Exception as e:
@@ -419,14 +453,41 @@ def get_full_recipe_details(recipe_id: int):
                 
         return {
             "name": data.get("title"),
-            "total_time": str(data.get("readyInMinutes", 0)) + " mins",
+            "total_time": f"{data.get('readyInMinutes', 0)} mins",
             "ingredients": ingredients,
-            "steps": steps
+            "steps": steps,
+            "source": data.get("sourceUrl") or data.get("spoonacularSourceUrl"),
+            "source_image": data.get("image")
         }
-        
     except Exception as e:
          print(f"Error fetching recipe {recipe_id}: {e}")
          raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/chat/sessions/{user_id}")
+def get_chat_sessions(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    """List all chat sessions for a user."""
+    sessions = session.exec(
+        select(ChatSession)
+        .where(ChatSession.user_id == user_id)
+        .order_by(ChatSession.updated_at.desc())
+    ).all()
+    return sessions
+
+@app.get("/chat/history/{thread_id}")
+def get_chat_history(thread_id: str, session: Session = Depends(get_session)):
+    """Fetch all messages for a specific session."""
+    messages = session.exec(
+        select(Message)
+        .where(Message.session_id == thread_id)
+        .order_by(Message.created_at.asc())
+    ).all()
+    
+    # Format for response
+    return [{
+        "sender": m.sender,
+        "content": m.content,
+        "created_at": m.created_at
+    } for m in messages]
 
 # --- Pantry Extraction Endpoint ---
 # --- Pantry Extraction Endpoint (Image) ---
