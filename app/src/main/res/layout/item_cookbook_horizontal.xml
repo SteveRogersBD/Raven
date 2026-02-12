@@ -1,13 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="280dp"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
     android:layout_marginVertical="8dp"
     app:cardCornerRadius="20dp"
-    app:cardElevation="4dp"
-    app:cardBackgroundColor="@color/chef_surface">
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/chef_surface"
+    android:outlineSpotShadowColor="@color/chef_orange"
+    android:outlineAmbientShadowColor="@color/chef_orange"
+    tools:targetApi="p">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -23,6 +26,22 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Delete Button -->
+        <ImageButton
+            android:id="@+id/btnDeleteCookbook"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_margin="12dp"
+            android:background="@drawable/rounded_tag_bg"
+            android:backgroundTint="#88000000"
+            android:src="@drawable/ic_delete"
+            app:tint="@color/white"
+            android:padding="6dp"
+            android:scaleType="centerInside"
+            app:layout_constraintTop_toTopOf="@id/videoThumbnail"
+            app:layout_constraintEnd_toEndOf="@id/videoThumbnail"
+            android:contentDescription="Delete Recipe" />
             
         <!-- Gradient Overlay -->
         <View

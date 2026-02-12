@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/chef_orange"
+    android:background="@drawable/grad_chef_orange"
     android:fitsSystemWindows="true"
     tools:context=".ChatActivity">
 
@@ -72,13 +72,13 @@
             android:id="@+id/btnSendMessage"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/circle_bg"
-            android:backgroundTint="@color/app_primary"
+            android:background="@drawable/circle_grad_chef_orange"
             android:src="@drawable/ic_arrow_forward"
             android:padding="12dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:tint="@color/tech_black" />
+            app:backgroundTint="@null"
+            app:tint="@color/white" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/chef_orange"
+    android:background="@drawable/grad_chef_orange"
     android:fitsSystemWindows="true">
 
     <include
@@ -120,19 +120,19 @@
                         app:strokeWidth="2dp"
                         style="@style/Widget.Material3.Button.OutlinedButton" />
 
-                    <com.google.android.material.button.MaterialButton
+                    <androidx.appcompat.widget.AppCompatButton
                         android:id="@+id/btnContinue"
                         android:layout_width="0dp"
                         android:layout_height="56dp"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
                         android:text="Continue"
-                        android:textColor="@color/tech_black"
+                        android:textColor="@color/white"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textAllCaps="false"
-                        android:backgroundTint="@color/white"
-                        app:cornerRadius="28dp" />
+                        android:background="@drawable/btn_grad_chef_orange"
+                        android:elevation="4dp" />
 
                 </LinearLayout>
 

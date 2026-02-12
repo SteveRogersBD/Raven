@@ -15,6 +15,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        com.example.plateit.utils.SessionManager sessionManager = new com.example.plateit.utils.SessionManager(this);
+        if (!sessionManager.isLoggedIn()) {
+            android.content.Intent intent = new android.content.Intent(this, SignInActivity.class);
+            intent.setFlags(
+                    android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         // Initialize AppBar
         com.example.plateit.utils.AppBarHelper.setup(this, "Home", false);
 
@@ -38,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
             if (selectedFragment != null) {
                 com.example.plateit.utils.AppBarHelper.setup(this, title, false);
                 getSupportFragmentManager().beginTransaction()
-                        .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left)
+                        .setCustomAnimations(R.anim.fade_in, R.anim.fade_out)
                         .replace(R.id.fragment_container, selectedFragment)
                         .commit();
                 return true;

@@ -56,6 +56,11 @@ public class CookbookAdapter extends RecyclerView.Adapter<CookbookAdapter.ViewHo
         }
 
         holder.itemView.setOnClickListener(v -> listener.onRecipeClick(recipe));
+        holder.btnDelete.setOnClickListener(v -> {
+            if (deleteListener != null) {
+                deleteListener.onRecipeDelete(recipe);
+            }
+        });
         holder.itemView.setOnLongClickListener(v -> {
             deleteListener.onRecipeDelete(recipe);
             return true;
@@ -75,12 +80,14 @@ public class CookbookAdapter extends RecyclerView.Adapter<CookbookAdapter.ViewHo
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView title, subtitle, channel;
         ImageView thumbnail;
+        android.widget.ImageButton btnDelete;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.videoTitle);
             subtitle = itemView.findViewById(R.id.videoTime);
             thumbnail = itemView.findViewById(R.id.videoThumbnail);
+            btnDelete = itemView.findViewById(R.id.btnDeleteCookbook);
             channel = itemView.findViewById(R.id.tvVideoChannel);
             channel.setVisibility(View.GONE);
         }

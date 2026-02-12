@@ -163,17 +163,33 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabChat"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- Custom Gradient Circular Chat FAB -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
-        android:contentDescription="Chat with Chef"
-        android:src="@drawable/ic_chat"
-        app:backgroundTint="@color/app_primary"
-        app:tint="@color/tech_black"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <FrameLayout
+            android:id="@+id/fabChat"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/grad_chef_orange"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_chat"
+                app:tint="@color/white" />
+        </FrameLayout>
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

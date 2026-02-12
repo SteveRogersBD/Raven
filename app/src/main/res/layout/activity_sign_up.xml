@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/chef_orange"
+    android:background="@drawable/grad_chef_orange"
     android:fitsSystemWindows="true"
     tools:context=".SignUpActivity">
 
@@ -204,18 +204,18 @@
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <!-- Sign Up Button -->
-                        <com.google.android.material.button.MaterialButton
+                        <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/btnSignUp"
                             android:layout_width="match_parent"
                             android:layout_height="60dp"
                             android:layout_marginTop="24dp"
                             android:text="Sign Up"
-                            android:textColor="@color/tech_black"
+                            android:textColor="@color/white"
                             android:textSize="16sp"
                             android:textStyle="bold"
-                            android:backgroundTint="@color/white"
-                            app:cornerRadius="30dp"
-                            android:elevation="4dp" />
+                            android:background="@drawable/btn_grad_chef_orange"
+                            android:elevation="4dp"
+                            android:textAllCaps="false" />
 
                         <!-- Sign In Link -->
                         <TextView

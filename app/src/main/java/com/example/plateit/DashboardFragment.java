@@ -67,10 +67,19 @@ public class DashboardFragment extends Fragment {
 
         // Profile Section
         ImageView btnEdit = view.findViewById(R.id.btnEditProfile);
+        ImageView btnLogout = view.findViewById(R.id.btnLogout);
         tvChefName = view.findViewById(R.id.tvChefName);
         setupChefName();
 
         btnEdit.setOnClickListener(v -> showEditProfileDialog(tvChefName));
+        btnLogout.setOnClickListener(v -> {
+            new android.app.AlertDialog.Builder(getContext())
+                    .setTitle("Logout")
+                    .setMessage("Are you sure you want to logout?")
+                    .setPositiveButton("Logout", (dialog, which) -> performLogout())
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
 
         // Stats UI
         chartSessions = view.findViewById(R.id.chartSessions);
@@ -379,6 +388,9 @@ public class DashboardFragment extends Fragment {
                             if (response.isSuccessful()) {
                                 Toast.makeText(getContext(), "Deleted", Toast.LENGTH_SHORT).show();
                                 fetchCookbook();
+                                fetchUserStats();
+                                fetchActiveSession();
+                                fetchHistory();
                             }
                         }
 
@@ -411,5 +423,15 @@ public class DashboardFragment extends Fragment {
         });
 
         dialog.show();
+    }
+
+    private void performLogout() {
+        sessionManager.logout();
+        Intent intent = new Intent(getContext(), SplashActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        if (getActivity() != null) {
+            getActivity().finish();
+        }
     }
 }

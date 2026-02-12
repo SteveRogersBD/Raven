@@ -44,18 +44,43 @@
         android:paddingBottom="88dp"
         android:clipToPadding="false"/>
 
-    <!-- FAB -->
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabAdd"
+    <!-- Custom Gradient FAB -->
+    <androidx.cardview.widget.CardView
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_margin="24dp"
-        android:text="Add Item"
-        android:textColor="@color/black"
-        app:icon="@android:drawable/ic_input_add"
-        app:iconTint="@color/black"
-        app:backgroundTint="@color/app_primary"
+        app:cardCornerRadius="28dp"
+        app:cardElevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/fabAdd"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/grad_chef_orange"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="24dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@android:drawable/ic_input_add"
+                app:tint="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="Add Item"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

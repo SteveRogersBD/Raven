@@ -2,7 +2,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/chef_orange"
+    android:background="@drawable/grad_chef_orange"
     android:fitsSystemWindows="true">
 
     <View
@@ -83,7 +83,7 @@
                 app:strokeWidth="1dp"
                 style="@style/Widget.Material3.Button.OutlinedButton" />
 
-            <com.google.android.material.button.MaterialButton
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnNext"
                 android:layout_width="0dp"
                 android:layout_height="56dp"
@@ -93,8 +93,8 @@
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 android:textAllCaps="false"
-                android:backgroundTint="@color/tech_black"
-                app:cornerRadius="28dp" />
+                android:background="@drawable/btn_grad_chef_orange"
+                android:elevation="4dp" />
 
         </LinearLayout>
 

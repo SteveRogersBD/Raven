@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Selected: White on Orange Background -->
-    <item android:state_checked="true" android:color="@color/white" />
-    <!-- Unselected: Lightly transparent white -->
-    <item android:color="#B3FFFFFF" />
+    <!-- Selected: Deep Orange on White Pill -->
+    <item android:state_checked="true" android:color="@color/chef_orange_dark" />
+    <!-- Unselected: Solid White -->
+    <item android:color="@color/white" />
 </selector>

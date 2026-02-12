@@ -1,13 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
     android:layout_marginVertical="10dp"
     app:cardCornerRadius="20dp"
-    app:cardElevation="6dp"
-    app:cardBackgroundColor="@color/chef_surface">
+    app:cardElevation="10dp"
+    app:cardBackgroundColor="@color/chef_surface"
+    android:outlineSpotShadowColor="@color/chef_red"
+    android:outlineAmbientShadowColor="@color/chef_red"
+    tools:targetApi="p">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"

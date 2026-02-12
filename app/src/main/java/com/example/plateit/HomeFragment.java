@@ -134,11 +134,8 @@ public class HomeFragment extends Fragment {
         }
 
         // Chat FAB
-        com.google.android.material.floatingactionbutton.FloatingActionButton fabChat = view
-                .findViewById(R.id.fabChat);
-        fabChat.setOnClickListener(v ->
-
-        showChatBottomSheet());
+        View fabChat = view.findViewById(R.id.fabChat);
+        fabChat.setOnClickListener(v -> showChatBottomSheet());
 
         return view;
     }

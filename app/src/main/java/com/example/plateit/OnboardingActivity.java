@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
-import com.google.android.material.button.MaterialButton;
+import android.widget.Button;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.List;
 public class OnboardingActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
-    private MaterialButton btnNext, btnSkip;
+    private Button btnNext, btnSkip;
     private View dotsIndicator;
     private ImageView dot1, dot2, dot3;
     private com.example.plateit.utils.SessionManager sessionManager;

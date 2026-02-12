@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.plateit.api.RetrofitClient;
 import com.example.plateit.requests.PreferencesRequest;
-import com.google.android.material.button.MaterialButton;
+import android.widget.Button;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
@@ -22,7 +22,7 @@ import retrofit2.Response;
 public class PreferencesActivity extends AppCompatActivity {
 
     private ChipGroup chipGroupPreferences;
-    private MaterialButton btnContinue, btnSkip;
+    private Button btnContinue, btnSkip;
     private com.example.plateit.utils.SessionManager sessionManager;
 
     // Predefined meal preference options

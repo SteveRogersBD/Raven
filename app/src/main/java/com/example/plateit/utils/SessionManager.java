@@ -35,11 +35,16 @@ public class SessionManager {
     }
 
     public boolean isLoggedIn() {
-        return pref.getBoolean(IS_LOGGED_IN, false);
+        return pref.getBoolean(IS_LOGGED_IN, false) && getUserId() != null;
     }
 
     public String getUserId() {
         return pref.getString(KEY_USER_ID, null);
+    }
+
+    public void logout() {
+        editor.clear();
+        editor.commit();
     }
 
     public String getFullName() {

@@ -13,21 +13,22 @@
         <item name="colorSurface">@color/chef_surface</item>
         <item name="colorOnSurface">@color/chef_dark</item>
         
-        <!-- Status Bar -->
-        <item name="android:statusBarColor">@color/chef_orange</item>
+        <!-- Status Bar & Nav Bar (Transparent to show root gradient) -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
-        <!-- Navigation Bar (the very bottom system bar) -->
-        <item name="android:navigationBarColor">@color/chef_orange</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="O_MR1">false</item>
     </style>
 
     <style name="Theme.PlateIt" parent="Base.Theme.PlateIt" />
     
     <style name="Theme.PlateIt.BottomNav" parent="ThemeOverlay.Material3.DynamicColors.Light">
-        <item name="colorSecondaryContainer">#33FFFFFF</item> <!-- Subtle white highlight for pill -->
-        <item name="colorOnSecondaryContainer">#FFFFFF</item> <!-- White text/icon on pill -->
-        <item name="android:background">@color/chef_orange</item>
-        <item name="itemTextColor">@color/bottom_nav_colors</item>
-        <item name="itemIconTint">@color/bottom_nav_colors</item>
+        <item name="colorSecondaryContainer">@color/app_primary</item> <!-- Solid white pill for selection -->
+        <item name="colorOnSecondaryContainer">#FF5722</item> <!-- Dark orange icon/text on pill -->
+<!--        <item name="android:background">@color/app_primary</item>-->
+    </style>
+
+    <style name="ShapeAppearance.PlateIt.Circle" parent="">
+        <item name="cornerSize">50%</item>
     </style>
 </resources>

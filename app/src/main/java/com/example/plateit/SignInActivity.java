@@ -7,14 +7,14 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.plateit.utils.SessionManager;
-import com.google.android.material.button.MaterialButton;
+import android.widget.Button;
 import com.google.android.material.textfield.TextInputEditText;
 
 public class SignInActivity extends AppCompatActivity {
 
     private TextInputEditText etEmail;
     private TextInputEditText etPassword;
-    private MaterialButton btnSignIn;
+    private Button btnSignIn;
     private TextView tvSignUp;
 
     @Override

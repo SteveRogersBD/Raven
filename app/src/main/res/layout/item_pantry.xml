@@ -1,12 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    android:elevation="4dp"
+    app:cardElevation="8dp"
     app:cardCornerRadius="16dp"
     app:cardBackgroundColor="@color/chef_surface"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:outlineSpotShadowColor="@color/chef_orange"
+    android:outlineAmbientShadowColor="@color/chef_orange"
+    tools:targetApi="p">
 
     <LinearLayout
         android:layout_width="match_parent"

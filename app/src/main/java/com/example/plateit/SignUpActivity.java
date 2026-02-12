@@ -6,7 +6,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.button.MaterialButton;
+import android.widget.Button;
 import com.google.android.material.textfield.TextInputEditText;
 
 public class SignUpActivity extends AppCompatActivity {
@@ -15,7 +15,7 @@ public class SignUpActivity extends AppCompatActivity {
     private TextInputEditText etUsername;
     private TextInputEditText etEmail;
     private TextInputEditText etPassword;
-    private MaterialButton btnSignUp;
+    private Button btnSignUp;
     private TextView tvSignIn;
 
     @Override
