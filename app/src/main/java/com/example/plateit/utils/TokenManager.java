@@ -11,8 +11,9 @@ public class TokenManager {
     private static TokenManager instance;
     private SessionManager sessionManager;
 
-    // Entitlement ID from RevenueCat Dashboard
+    // Entitlement IDs
     private static final String ENTITLEMENT_ID = "PlateIt Pro";
+    private static final String ENTITLEMENT_ID_ALT = "pro_access";
 
     private TokenManager(Context context) {
         sessionManager = new SessionManager(context);
@@ -68,8 +69,8 @@ public class TokenManager {
             Purchases.getSharedInstance().getCustomerInfo(new ReceiveCustomerInfoCallback() {
                 @Override
                 public void onReceived(@NonNull CustomerInfo customerInfo) {
-                    if (customerInfo.getEntitlements().get(ENTITLEMENT_ID) != null &&
-                            customerInfo.getEntitlements().get(ENTITLEMENT_ID).isActive()) {
+                    boolean isPro = checkIfPro(customerInfo);
+                    if (isPro) {
                         // User is PRO, upgrade balance if they were just reset
                         sessionManager.setTokenBalance(50);
                         sessionManager.setProCached(true);
@@ -99,21 +100,8 @@ public class TokenManager {
         Purchases.getSharedInstance().getCustomerInfo(new ReceiveCustomerInfoCallback() {
             @Override
             public void onReceived(@NonNull CustomerInfo info) {
-                boolean isPro = (info.getEntitlements().get(ENTITLEMENT_ID) != null
-                        && info.getEntitlements().get(ENTITLEMENT_ID).isActive()) ||
-                        (info.getEntitlements().get("pro_access") != null
-                                && info.getEntitlements().get("pro_access").isActive());
-
-                // Fallback: If ANY entitlement is active, count it as Pro for the hackathon
-                if (!isPro && !info.getEntitlements().getActive().isEmpty()) {
-                    isPro = true;
-                }
-
-                sessionManager.setProCached(isPro);
-                if (isPro) {
-                    sessionManager.setHasUsedFreeChat(false);
-                }
-                callback.onResult(isPro);
+                syncWithCustomerInfo(info);
+                callback.onResult(checkIfPro(info));
             }
 
             @Override
@@ -128,23 +116,7 @@ public class TokenManager {
         Purchases.getSharedInstance().getCustomerInfo(new ReceiveCustomerInfoCallback() {
             @Override
             public void onReceived(@NonNull CustomerInfo info) {
-                boolean isPro = (info.getEntitlements().get(ENTITLEMENT_ID) != null
-                        && info.getEntitlements().get(ENTITLEMENT_ID).isActive()) ||
-                        (info.getEntitlements().get("pro_access") != null
-                                && info.getEntitlements().get("pro_access").isActive());
-
-                if (isPro) {
-                    // Upgrade logic: If user is Pro but has default tokens, bump them to 50
-                    // And reset the cycle so checkMonthlyReset doesn't overwrite it
-                    sessionManager.setProCached(true);
-                    sessionManager.setHasUsedFreeChat(false);
-                    if (sessionManager.getTokenBalance() < 50) {
-                        sessionManager.setTokenBalance(50);
-                        sessionManager.setLastTokenResetTime(System.currentTimeMillis());
-                    }
-                } else {
-                    sessionManager.setProCached(false);
-                }
+                syncWithCustomerInfo(info);
                 if (onComplete != null) {
                     onComplete.run();
                 }
@@ -152,12 +124,25 @@ public class TokenManager {
 
             @Override
             public void onError(@NonNull PurchasesError error) {
-                // Ignore error
                 if (onComplete != null) {
                     onComplete.run();
                 }
             }
         });
+    }
+
+    public void syncWithCustomerInfo(@NonNull CustomerInfo info) {
+        boolean isPro = checkIfPro(info);
+        sessionManager.setProCached(isPro);
+
+        if (isPro) {
+            sessionManager.setHasUsedFreeChat(false);
+            // Pro users always get at least 50 tokens
+            if (sessionManager.getTokenBalance() < 50) {
+                sessionManager.setTokenBalance(50);
+                sessionManager.setLastTokenResetTime(System.currentTimeMillis());
+            }
+        }
     }
 
     public boolean isPro() {
@@ -166,5 +151,22 @@ public class TokenManager {
 
     public interface ProStatusCallback {
         void onResult(boolean isPro);
+    }
+
+    public boolean checkIfPro(@NonNull CustomerInfo info) {
+        // 1. Check primary entitlement
+        if (info.getEntitlements().get(ENTITLEMENT_ID) != null &&
+                info.getEntitlements().get(ENTITLEMENT_ID).isActive()) {
+            return true;
+        }
+
+        // 2. Check alternative ID
+        if (info.getEntitlements().get(ENTITLEMENT_ID_ALT) != null &&
+                info.getEntitlements().get(ENTITLEMENT_ID_ALT).isActive()) {
+            return true;
+        }
+
+        // 3. Fallback: If ANY entitlement is active, count it as Pro for the hackathon
+        return !info.getEntitlements().getActive().isEmpty();
     }
 }

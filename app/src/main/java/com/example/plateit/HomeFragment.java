@@ -42,6 +42,7 @@ public class HomeFragment extends Fragment {
     }
 
     private android.widget.TextView tvTokenBalance;
+    private android.widget.TextView tvProBadge;
 
     @Nullable
     @Override
@@ -59,6 +60,7 @@ public class HomeFragment extends Fragment {
 
         // Update Token Balance
         tvTokenBalance = view.findViewById(R.id.tvTokenBalance);
+        tvProBadge = view.findViewById(R.id.tvProBadge);
         updateTokenDisplay();
 
         // --- 1. Smart Link Detection Logic (Left Icon) ---
@@ -157,6 +159,17 @@ public class HomeFragment extends Fragment {
     private void updateTokenDisplay() {
         if (tvTokenBalance != null && getContext() != null) {
             tvTokenBalance.setText(String.valueOf(TokenManager.getInstance(getContext()).getTokens()));
+
+            // Also check Pro status for the badge
+            TokenManager.getInstance(getContext()).isPro(isPro -> {
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (tvProBadge != null) {
+                            tvProBadge.setVisibility(isPro ? View.VISIBLE : View.GONE);
+                        }
+                    });
+                }
+            });
         }
     }
 

@@ -23,13 +23,31 @@
 
         <TextView
             android:id="@+id/tvChefName"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="Chef"
             android:textSize="22sp"
             android:textStyle="bold"
             android:textColor="@color/tech_black"/>
+
+        <TextView
+            android:id="@+id/tvProBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/badge_pro"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp"
+            android:text="PRO"
+            android:textColor="@color/white"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <ImageView
             android:id="@+id/btnEditProfile"

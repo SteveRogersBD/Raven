@@ -31,7 +31,6 @@ public class CookingStepsAdapter extends RecyclerView.Adapter<CookingStepsAdapte
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         RecipeStep step = steps.get(position);
-        holder.tvNumber.setText(String.valueOf(position + 1));
 
         // Handle potentially null instruction
         String text = step.getInstruction() != null ? step.getInstruction() : "";
@@ -54,13 +53,11 @@ public class CookingStepsAdapter extends RecyclerView.Adapter<CookingStepsAdapte
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvNumber;
         TextView tvDescription;
         ImageView ivImage;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvNumber = itemView.findViewById(R.id.tvStepNumberBig);
             tvDescription = itemView.findViewById(R.id.tvStepDescriptionBig);
             ivImage = itemView.findViewById(R.id.ivStepImage);
         }

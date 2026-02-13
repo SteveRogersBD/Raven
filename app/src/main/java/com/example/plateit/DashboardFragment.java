@@ -56,7 +56,7 @@ public class DashboardFragment extends Fragment {
     // Stats UI
     private com.github.mikephil.charting.charts.PieChart chartSessions;
     private TextView tvStatRecipes, tvStatDays, tvStatSessions;
-    private TextView tvChefName;
+    private TextView tvChefName, tvProBadge;
 
     public DashboardFragment() {
         // Required empty public constructor
@@ -74,6 +74,7 @@ public class DashboardFragment extends Fragment {
         ImageView btnEdit = view.findViewById(R.id.btnEditProfile);
         ImageView btnLogout = view.findViewById(R.id.btnLogout);
         tvChefName = view.findViewById(R.id.tvChefName);
+        tvProBadge = view.findViewById(R.id.tvProBadge);
         setupChefName();
 
         btnEdit.setOnClickListener(v -> showEditProfileDialog(tvChefName));
@@ -158,6 +159,26 @@ public class DashboardFragment extends Fragment {
             tvChefName.setText("Chef");
             fetchUserProfile();
         }
+
+        // Check Pro status for the badge and name styling
+        com.example.plateit.utils.TokenManager.getInstance(getContext()).isPro(isPro -> {
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    if (tvProBadge != null) {
+                        tvProBadge.setVisibility(isPro ? View.VISIBLE : View.GONE);
+                    }
+                    if (tvChefName != null) {
+                        if (isPro) {
+                            tvChefName.setBackgroundResource(R.drawable.bg_pro_name);
+                            tvChefName.setTextColor(getResources().getColor(R.color.chef_orange));
+                        } else {
+                            tvChefName.setBackground(null);
+                            tvChefName.setTextColor(getResources().getColor(R.color.tech_black));
+                        }
+                    }
+                });
+            }
+        });
     }
 
     private void fetchUserProfile() {
@@ -294,6 +315,10 @@ public class DashboardFragment extends Fragment {
                         tvEmpty.setVisibility(View.GONE);
                         rvCookbook.setVisibility(View.VISIBLE);
                         adapter.updateData(recipes);
+                    }
+                    // Crucial: Update sessions too so they can match labels/data
+                    if (sessionAdapter != null) {
+                        sessionAdapter.updateCookbook(recipes);
                     }
                 } else {
                     android.util.Log.e("PlateIt", "Cookbook fetch failed: " + response.code());

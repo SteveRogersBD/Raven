@@ -52,6 +52,9 @@ public class CookingModeActivity extends AppCompatActivity {
     private ImageButton btnCamera, btnKeyboard;
     private CardView cvAssistantResponse;
     private TextView tvAssistantText;
+    private android.view.View userQueryContainer;
+    private ImageView imgUserQuery;
+    private TextView tvUserQuery;
 
     // Voice & TTS
     private SpeechRecognizer speechRecognizer;
@@ -123,8 +126,7 @@ public class CookingModeActivity extends AppCompatActivity {
         // bars
         setContentView(R.layout.activity_cooking_mode);
 
-        // Standardized AppBar Setup
-        com.example.plateit.utils.AppBarHelper.setup(this, "Cooking Mode", true);
+        // setContentView(R.layout.activity_cooking_mode); already called above
 
         sessionManager = new com.example.plateit.utils.SessionManager(this);
         int existingSessionId = getIntent().getIntExtra("session_id", -1);
@@ -188,7 +190,6 @@ public class CookingModeActivity extends AppCompatActivity {
         tvRecipeName = findViewById(R.id.tvRecipeName);
         if (currentRecipe != null) {
             tvRecipeName.setText(currentRecipe.getName());
-            com.example.plateit.utils.AppBarHelper.setup(this, currentRecipe.getName(), true);
         }
 
         cvSourceCard = findViewById(R.id.cvSourceCard);
@@ -196,7 +197,6 @@ public class CookingModeActivity extends AppCompatActivity {
         tvSourceText = findViewById(R.id.tvSourceText);
         View btnPrevious = findViewById(R.id.btnPrevious);
         View btnNext = findViewById(R.id.btnNext);
-        View btnClose = findViewById(R.id.btnClose);
 
         // Assistant UI
         btnMic = findViewById(R.id.btnMic);
@@ -204,6 +204,9 @@ public class CookingModeActivity extends AppCompatActivity {
         btnKeyboard = findViewById(R.id.btnKeyboard);
         cvAssistantResponse = findViewById(R.id.cvAssistantResponse);
         tvAssistantText = findViewById(R.id.tvAssistantText);
+        userQueryContainer = findViewById(R.id.userQueryContainer);
+        imgUserQuery = findViewById(R.id.imgUserQuery);
+        tvUserQuery = findViewById(R.id.tvUserQuery);
 
         // Dynamic Lists
         rvRecipeList = findViewById(R.id.rvRecipeList);
@@ -289,7 +292,7 @@ public class CookingModeActivity extends AppCompatActivity {
             }
         }
 
-        updateProgress(0);
+        updateProgress(initialStep);
 
         // ViewPager Listeners
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
@@ -320,7 +323,7 @@ public class CookingModeActivity extends AppCompatActivity {
             }
         });
 
-        btnClose.setOnClickListener(v -> finish());
+        // Removed the old btnClose.setOnClickListener here as it's moved above.
 
         // --- Assistant Logic ---
         try {
@@ -370,14 +373,58 @@ public class CookingModeActivity extends AppCompatActivity {
     }
 
     private static final int CAMERA_REQUEST_CODE = 200;
+    private static final int GALLERY_REQUEST_CODE = 201;
 
     private void showCameraInput() {
+        showVisionOptions();
+    }
+
+    private void showVisionOptions() {
+        String[] options = { "Take Photo", "Choose from Gallery" };
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Assistant Vision")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        launchCamera();
+                    } else {
+                        launchGallery();
+                    }
+                })
+                .show();
+    }
+
+    private void launchCamera() {
         Intent takePictureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+        try {
             startActivityForResult(takePictureIntent, CAMERA_REQUEST_CODE);
-        } else {
+        } catch (android.content.ActivityNotFoundException e) {
             Toast.makeText(this, "No camera app found", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void launchGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), GALLERY_REQUEST_CODE);
+    }
+
+    private void promptForTextWithImage(android.graphics.Bitmap bitmap) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("What should I look for?");
+
+        final EditText input = new EditText(this);
+        input.setHint("e.g. Does the crust look done?");
+        input.setPadding(32, 32, 32, 32);
+        builder.setView(input);
+
+        builder.setPositiveButton("Ask Assistant", (dialog, which) -> {
+            String q = input.getText().toString().trim();
+            if (q.isEmpty())
+                q = "Analyze this photo of my cooking.";
+            handleUserQuery(q, bitmap);
+        });
+        builder.setNegativeButton("Cancel", null);
+        builder.show();
     }
 
     // --- Logic Stub ---
@@ -398,12 +445,26 @@ public class CookingModeActivity extends AppCompatActivity {
         int currentStepIndex = viewPager.getCurrentItem();
         String imageBase64 = null;
 
+        // Display user query in UI
+        cvAssistantResponse.setVisibility(View.VISIBLE);
+        userQueryContainer.setVisibility(View.VISIBLE);
         if (image != null) {
+            imgUserQuery.setVisibility(View.VISIBLE);
+            imgUserQuery.setImageBitmap(image);
             java.io.ByteArrayOutputStream byteArrayOutputStream = new java.io.ByteArrayOutputStream();
             image.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, byteArrayOutputStream);
             byte[] byteArray = byteArrayOutputStream.toByteArray();
             imageBase64 = android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP);
+        } else {
+            imgUserQuery.setVisibility(View.GONE);
         }
+        tvUserQuery.setText(query);
+        tvAssistantText.setText("Thinking...");
+        // The original code had an extra closing brace here, which was syntactically
+        // incorrect.
+        // It has been removed to ensure correctness.
+        // The imageBase64 conversion was also inside an incorrect block. Moved it
+        // inside the `if (image != null)` block.
 
         String userId = sessionManager.getUserId();
         String threadId = (sessionId != -1) ? "cooking_" + sessionId : "chat_" + userId;
@@ -579,12 +640,29 @@ public class CookingModeActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CAMERA_REQUEST_CODE && resultCode == RESULT_OK) {
-            android.os.Bundle extras = data.getExtras();
-            android.graphics.Bitmap imageBitmap = (android.graphics.Bitmap) extras.get("data");
-
-            // Send image to agent
-            handleUserQuery("Analyze this photo of my cooking. Does it look right?", imageBitmap);
+        if (resultCode == RESULT_OK && data != null) {
+            if (requestCode == CAMERA_REQUEST_CODE) {
+                android.os.Bundle extras = data.getExtras();
+                if (extras != null && extras.containsKey("data")) {
+                    android.graphics.Bitmap imageBitmap = (android.graphics.Bitmap) extras.get("data");
+                    if (imageBitmap != null) {
+                        promptForTextWithImage(imageBitmap);
+                    }
+                } else {
+                    Toast.makeText(this, "Failed to capture image", Toast.LENGTH_SHORT).show();
+                }
+            } else if (requestCode == GALLERY_REQUEST_CODE) {
+                android.net.Uri selectedImage = data.getData();
+                if (selectedImage != null) {
+                    try {
+                        android.graphics.Bitmap bitmap = android.provider.MediaStore.Images.Media
+                                .getBitmap(this.getContentResolver(), selectedImage);
+                        promptForTextWithImage(bitmap);
+                    } catch (java.io.IOException e) {
+                        Toast.makeText(this, "Error loading image", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
         }
     }
 

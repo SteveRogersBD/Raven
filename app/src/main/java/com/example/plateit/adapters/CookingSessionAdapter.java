@@ -41,6 +41,11 @@ public class CookingSessionAdapter extends RecyclerView.Adapter<CookingSessionAd
         notifyDataSetChanged();
     }
 
+    public void updateCookbook(List<CookbookEntry> cookbook) {
+        this.cookbook = cookbook;
+        notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

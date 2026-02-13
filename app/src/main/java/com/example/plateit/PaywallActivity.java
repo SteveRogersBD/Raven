@@ -124,10 +124,10 @@ public class PaywallActivity extends AppCompatActivity {
             public void onCompleted(@NonNull com.revenuecat.purchases.models.StoreTransaction storeTransaction,
                     @NonNull CustomerInfo customerInfo) {
                 loadingDialog.dismissDialog();
-                if ((customerInfo.getEntitlements().get("PlateIt Pro") != null
-                        && customerInfo.getEntitlements().get("PlateIt Pro").isActive()) ||
-                        (customerInfo.getEntitlements().get("pro_access") != null
-                                && customerInfo.getEntitlements().get("pro_access").isActive())) {
+
+                if (TokenManager.getInstance(PaywallActivity.this).checkIfPro(customerInfo)) {
+                    // Sync immediately with the info we have
+                    TokenManager.getInstance(PaywallActivity.this).syncWithCustomerInfo(customerInfo);
 
                     // Unlock Pro Features
                     TokenManager.getInstance(PaywallActivity.this).forceRefreshProStatus(() -> {
@@ -157,10 +157,16 @@ public class PaywallActivity extends AppCompatActivity {
             @Override
             public void onReceived(@NonNull CustomerInfo customerInfo) {
                 loadingDialog.dismissDialog();
-                if (customerInfo.getEntitlements().get("PlateIt Pro") != null &&
-                        customerInfo.getEntitlements().get("PlateIt Pro").isActive()) {
-                    Toast.makeText(PaywallActivity.this, "Purchases restored!", Toast.LENGTH_SHORT).show();
-                    finish();
+                if (TokenManager.getInstance(PaywallActivity.this).checkIfPro(customerInfo)) {
+                    // Sync immediately
+                    TokenManager.getInstance(PaywallActivity.this).syncWithCustomerInfo(customerInfo);
+
+                    TokenManager.getInstance(PaywallActivity.this).forceRefreshProStatus(() -> {
+                        runOnUiThread(() -> {
+                            Toast.makeText(PaywallActivity.this, "Purchases restored!", Toast.LENGTH_SHORT).show();
+                            finish();
+                        });
+                    });
                 } else {
                     Toast.makeText(PaywallActivity.this, "No active subscriptions found.", Toast.LENGTH_SHORT).show();
                 }
