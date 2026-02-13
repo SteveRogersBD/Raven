@@ -94,8 +94,8 @@ public class OnboardingActivity extends AppCompatActivity {
     }
 
     private void updateDots(int position) {
-        int activeColor = getResources().getColor(R.color.tech_black, null);
-        int inactiveColor = getResources().getColor(R.color.gray_400, null);
+        int activeColor = android.graphics.Color.WHITE;
+        int inactiveColor = android.graphics.Color.parseColor("#88FFFFFF");
 
         dot1.setColorFilter(position == 0 ? activeColor : inactiveColor);
         dot2.setColorFilter(position == 1 ? activeColor : inactiveColor);

@@ -17,6 +17,7 @@ public class SignUpActivity extends AppCompatActivity {
     private TextInputEditText etPassword;
     private Button btnSignUp;
     private TextView tvSignIn;
+    private android.widget.ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +36,7 @@ public class SignUpActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.etPassword);
         btnSignUp = findViewById(R.id.btnSignUp);
         tvSignIn = findViewById(R.id.tvSignIn);
+        progressBar = findViewById(R.id.progressBar);
 
         btnSignUp.setOnClickListener(v -> {
             String fullName = etFullName.getText().toString();
@@ -49,6 +51,10 @@ public class SignUpActivity extends AppCompatActivity {
                 return;
             }
 
+            btnSignUp.setEnabled(false);
+            btnSignUp.setText("Creating Account...");
+            progressBar.setVisibility(android.view.View.VISIBLE);
+
             com.example.plateit.requests.SignUpRequest request = new com.example.plateit.requests.SignUpRequest(
                     fullName, username, email, password);
 
@@ -57,6 +63,10 @@ public class SignUpActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(retrofit2.Call<com.example.plateit.responses.AuthResponse> call,
                                 retrofit2.Response<com.example.plateit.responses.AuthResponse> response) {
+                            progressBar.setVisibility(android.view.View.GONE);
+                            btnSignUp.setEnabled(true);
+                            btnSignUp.setText("Sign Up");
+
                             if (response.isSuccessful() && response.body() != null) {
                                 // Save session
                                 sessionManager.createLoginSession(
@@ -81,6 +91,9 @@ public class SignUpActivity extends AppCompatActivity {
                         @Override
                         public void onFailure(retrofit2.Call<com.example.plateit.responses.AuthResponse> call,
                                 Throwable t) {
+                            progressBar.setVisibility(android.view.View.GONE);
+                            btnSignUp.setEnabled(true);
+                            btnSignUp.setText("Sign Up");
                             android.widget.Toast.makeText(SignUpActivity.this, "Error: " + t.getMessage(),
                                     android.widget.Toast.LENGTH_SHORT).show();
                         }

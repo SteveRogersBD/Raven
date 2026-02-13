@@ -5,10 +5,11 @@
     android:background="@drawable/grad_chef_orange"
     android:fitsSystemWindows="true">
 
+    <!-- Dark Overlay for Premium Look -->
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/white" />
+        android:background="#44000000" />
 
     <!-- ViewPager for Onboarding Slides -->
     <androidx.viewpager2.widget.ViewPager2
@@ -25,7 +26,7 @@
         android:layout_alignParentBottom="true"
         android:orientation="vertical"
         android:padding="24dp"
-        android:background="@color/white">
+        android:background="#22FFFFFF"> <!-- Glassmorphism effect -->
 
         <!-- Dots Indicator -->
         <LinearLayout
@@ -75,11 +76,11 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:text="Skip"
-                android:textColor="@color/gray_600"
+                android:textColor="@color/white"
                 android:textSize="16sp"
                 android:textAllCaps="false"
                 app:cornerRadius="28dp"
-                app:strokeColor="@color/gray_300"
+                app:strokeColor="@color/white"
                 app:strokeWidth="1dp"
                 style="@style/Widget.Material3.Button.OutlinedButton" />
 

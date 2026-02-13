@@ -233,7 +233,6 @@
 
                 </androidx.cardview.widget.CardView>
 
-                <!-- Bottom Spacing -->
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="24dp" />
@@ -241,6 +240,15 @@
             </LinearLayout>
 
         </ScrollView>
+
+        <!-- Loading Indicator -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:indeterminateTint="@color/white" />
 
     </FrameLayout>
 

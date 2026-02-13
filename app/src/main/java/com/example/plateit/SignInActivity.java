@@ -16,6 +16,7 @@ public class SignInActivity extends AppCompatActivity {
     private TextInputEditText etPassword;
     private Button btnSignIn;
     private TextView tvSignUp;
+    private android.widget.ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +40,7 @@ public class SignInActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.etPassword);
         btnSignIn = findViewById(R.id.btnSignIn);
         tvSignUp = findViewById(R.id.tvSignUp);
+        progressBar = findViewById(R.id.progressBar);
 
         btnSignIn.setOnClickListener(v -> {
             String email = etEmail.getText().toString();
@@ -50,6 +52,10 @@ public class SignInActivity extends AppCompatActivity {
                 return;
             }
 
+            btnSignIn.setEnabled(false);
+            btnSignIn.setText("Signing In...");
+            progressBar.setVisibility(android.view.View.VISIBLE);
+
             com.example.plateit.requests.SignInRequest request = new com.example.plateit.requests.SignInRequest(email,
                     password);
 
@@ -58,6 +64,10 @@ public class SignInActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(retrofit2.Call<com.example.plateit.responses.AuthResponse> call,
                                 retrofit2.Response<com.example.plateit.responses.AuthResponse> response) {
+                            progressBar.setVisibility(android.view.View.GONE);
+                            btnSignIn.setEnabled(true);
+                            btnSignIn.setText("Sign In");
+
                             if (response.isSuccessful() && response.body() != null) {
                                 // Save session
                                 sessionManager.createLoginSession(
@@ -82,6 +92,9 @@ public class SignInActivity extends AppCompatActivity {
                         @Override
                         public void onFailure(retrofit2.Call<com.example.plateit.responses.AuthResponse> call,
                                 Throwable t) {
+                            progressBar.setVisibility(android.view.View.GONE);
+                            btnSignIn.setEnabled(true);
+                            btnSignIn.setText("Sign In");
                             android.widget.Toast.makeText(SignInActivity.this, "Error: " + t.getMessage(),
                                     android.widget.Toast.LENGTH_SHORT).show();
                         }

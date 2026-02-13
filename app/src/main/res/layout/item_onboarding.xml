@@ -5,17 +5,17 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="32dp"
-    android:background="@color/white">
+    android:background="@android:color/transparent">
 
     <!-- Onboarding Image -->
     <ImageView
         android:id="@+id/imgOnboarding"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="1.2"
         android:scaleType="centerInside"
         android:contentDescription="Onboarding illustration"
-        android:layout_marginBottom="48dp" />
+        android:layout_marginBottom="32dp" />
 
     <!-- Title -->
     <TextView
@@ -23,9 +23,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Feature Title"
-        android:textSize="28sp"
+        android:textSize="32sp"
         android:textStyle="bold"
-        android:textColor="@color/tech_black"
+        android:textColor="@color/white"
         android:gravity="center"
         android:layout_marginBottom="16dp"
         android:fontFamily="sans-serif-medium" />
@@ -36,10 +36,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Feature description goes here with details about what users can do."
-        android:textSize="16sp"
-        android:textColor="@color/gray_600"
+        android:textSize="18sp"
+        android:textColor="#DDFFFFFF"
         android:gravity="center"
         android:lineSpacingExtra="4dp"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="48dp" />
 
 </LinearLayout>
