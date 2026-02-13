@@ -19,13 +19,13 @@
 - **CI/CD**: GitHub Actions (automated testing, build, deploy)
 
 ### AI Models
-- **Gemini 2.0 Flash**: Native video understanding, vision tasks (pantry scanning)
-- **GPT-4o**: Orchestrator for complex reasoning, recipe generation, chat agent
-- **GPT-4o-mini**: Fast formatting, text refinement, prose polishing
+- **Gemini 3 Flash Preview**: Native video understanding, vision-intensive reasoning, primary orchestrator for multimodal tasks (pantry scanning, video-to-recipe).
+- **GPT-4o**: Specialized worker for high-precision reasoning, structured output generation, and recipe formatting.
+- **GPT-4o-mini**: Fast formatting, text refinement, prose polishing, and conversational "waiter" logic.
 
 ### External APIs
 - **Spoonacular**: Recipe database, ingredient data, nutritional info
-- **YouTube Data API v3**: Video metadata, thumbnails, search
+- **YouTube Data API v3**: Official integration for video search, engagement statistics (views), and length/duration data.
 - **Pexels API**: Free high-quality cooking images
 - **DuckDuckGo Search**: Fallback for images and general web search
 - **yt-dlp**: Video downloading from YouTube, TikTok, Instagram, Twitter
@@ -62,7 +62,7 @@ flowchart TB
     end
     
     subgraph AI["AI Services"]
-        Gemini[Gemini 2.0 Flash]
+        Gemini[Gemini 3 Flash Preview]
         GPT4[GPT-4o]
         GPT4Mini[GPT-4o-mini]
     end
@@ -81,15 +81,16 @@ flowchart TB
     Auth --> ChatAgent
     Auth --> PantryService
     
-    RecipeAgent -->|Video Analysis| Gemini
-    RecipeAgent -->|Recipe Generation| GPT4
+    RecipeAgent -->|Orchestration & Vision| Gemini
+    RecipeAgent -->|Structured Output| GPT4
     RecipeAgent -->|Text Formatting| GPT4Mini
     RecipeAgent -->|Recipe Data| Spoonacular
     RecipeAgent -->|Video Metadata| YouTube
     RecipeAgent -->|Images| Pexels
     RecipeAgent -->|Fallback Search| DDG
     
-    ChatAgent -->|Conversation| GPT4
+    ChatAgent -->|Orchestration & Reasoning| Gemini
+    ChatAgent -->|Structured Formatting| GPT4
     ChatAgent -->|Recipe Search| Spoonacular
     ChatAgent -->|Video Search| YouTube
     
@@ -221,15 +222,15 @@ graph TB
         CheckMeta[Check Video Metadata]
         MetaRouter{Description<br/>Complete?}
         Download[Download Video File]
-        ExtractVideo[Extract from Video<br/>Gemini 2.0 Flash]
+        ExtractVideo[Extract from Video<br/>Gemini 3 Flash Preview]
     end
     
     subgraph ImagePath["Image Processing Path"]
         ProcessImage[Download/Load Image]
-        AnalyzeImage[Analyze Image Type<br/>GPT-4o Vision]
+        AnalyzeImage[Analyze Image Type<br/>Gemini 3 Flash Preview]
         ImageRouter{Ingredients<br/>or Dish?}
-        FromIngredients[Recipe from Ingredients<br/>GPT-4o + Spoonacular]
-        FromDish[Recipe from Dish<br/>GPT-4o]
+        FromIngredients[Recipe from Ingredients<br/>Gemini 3 + Spoonacular]
+        FromDish[Recipe from Dish<br/>Gemini 3]
     end
     
     subgraph WebPath["Website Processing Path"]
@@ -238,7 +239,7 @@ graph TB
     end
     
     subgraph TextPath["Text Processing Path"]
-        ExtractText[Extract from Text<br/>GPT-4o]
+        ExtractText[Extract from Text<br/>Gemini 3]
     end
     
     subgraph FormattingPipeline["Recipe Formatting Pipeline"]
@@ -317,12 +318,12 @@ graph TB
 1. **Check Metadata**: Uses yt-dlp to fetch video description
 2. **GPT-4o Analysis**: Determines if description contains full recipe
 3. **Conditional Download**: Only downloads video if metadata insufficient
-4. **Gemini Video Understanding**: Uploads video to Gemini 2.0 Flash for native multimodal extraction
+4. **Gemini Video Understanding**: Uploads video to Gemini 3 Flash Preview for native multimodal extraction
 
 **Image Path:**
-1. **GPT-4o Vision**: Analyzes if image shows raw ingredients or finished dish
+1. **Gemini 3 Flash Preview**: Analyzes if image shows raw ingredients or finished dish
 2. **Ingredient Route**: Searches Spoonacular for recipes using detected ingredients
-3. **Dish Route**: Generates authentic recipe based on visual description
+3. **Dish Route**: Generates authentic recipe based on visual reasoning
 
 **Formatting Pipeline:**
 1. **GPT-4o Worker**: Converts raw text to strict JSON schema (Recipe model)
@@ -341,10 +342,10 @@ graph TB
 graph TB
     UserMsg[User Message]
     
-    subgraph ChatAgent["Chat Agent (GPT-4o)"]
+    subgraph ChatAgent["Chat Agent (Gemini 3)"]
         Context[Load Context:<br/>- Current Recipe<br/>- Current Step<br/>- Pantry Inventory<br/>- Chat History]
         
-        Reasoning[GPT-4o Reasoning:<br/>Determine Intent]
+        Reasoning[Gemini 3 Reasoning:<br/>Determine Intent]
         
         ToolRouter{Tool<br/>Required?}
         
@@ -356,7 +357,7 @@ graph TB
             FindByIngredients[Find by Ingredients<br/>Spoonacular]
         end
         
-        Response[Generate Response<br/>GPT-4o]
+        Response[Generate Response<br/>Gemini 3]
     end
     
     SaveMsg[Save to Database]
@@ -779,7 +780,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: '3.12'
       
       - name: Run Tests
         run: |
@@ -809,7 +810,7 @@ jobs:
 
 ### 1. Video Metadata Check
 - **Problem**: Downloading every video is slow and expensive
-- **Solution**: Check video description first with GPT-4o
+- **Solution**: Check video description first with Gemini 3 Flash Preview
 - **Impact**: 60% of videos have complete recipes in description, saving 10-30 seconds per extraction
 
 ### 2. Parallel Enrichment
