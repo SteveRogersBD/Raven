@@ -284,20 +284,24 @@ def node_check_video_metadata(state: AgentState):
 
     
 def node_get_youtube_data(state: AgentState):
-    """Fetches YouTube data."""
+    """Fetches YouTube data using yt-dlp (consolidated tool)."""
     url = state["url"]
     print(f"--- Processing YouTube: {url} ---")
-    video_id = extract_video_id.invoke(url)
-    if not video_id: raise ValueError("Could not extract YouTube ID")
     
-    transcript = get_youtube_transcript.invoke(video_id)
-    description = get_youtube_description.invoke(video_id)
+    # Use the consolidated tool which has our cookie/bot bypasses
+    meta = get_video_metadata.invoke(url)
     
-    if "No transcript detected" in transcript: transcript = ""
-
-    thumbnail = f"https://img.youtube.com/vi/{video_id}/mqdefault.jpg"
-    
-    return {"video_id": video_id, "transcript": transcript, "description": description, "video_thumbnail": thumbnail}
+    if not meta or not meta.get("title"):
+        # Fallback to ID extraction if metadata fails
+        video_id = extract_video_id.invoke(url)
+        return {"video_id": video_id}
+        
+    return {
+        "video_id": meta.get("video_id"), 
+        "transcript": meta.get("transcript", ""), 
+        "description": meta.get("description", ""), 
+        "video_thumbnail": meta.get("thumbnail")
+    }
 
 
 # --- Extraction Logic Nodes ---

@@ -46,4 +46,4 @@ jobs:
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }},SERP_API_KEY=${{ secrets.SERP_API_KEY }},DATABASE_URL=${{ secrets.DATABASE_URL }},SPOONACULAR_API_KEY=${{ secrets.SPOONACULAR_API_KEY }},OPEN_API_KEY=${{ secrets.OPEN_API_KEY }},YT_API_KEY=${{ secrets.YT_API_KEY }},PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}"
+            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }},SERP_API_KEY=${{ secrets.SERP_API_KEY }},DATABASE_URL=${{ secrets.DATABASE_URL }},SPOONACULAR_API_KEY=${{ secrets.SPOONACULAR_API_KEY }},OPEN_API_KEY=${{ secrets.OPEN_API_KEY }},YT_API_KEY=${{ secrets.YT_API_KEY }},PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }},YOUTUBE_COOKIES=${{ secrets.YOUTUBE_COOKIES }}"

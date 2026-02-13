@@ -1,5 +1,6 @@
 import os
 import requests
+import tempfile
 from langchain_core.tools import tool
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
@@ -400,26 +401,26 @@ def download_video_file(url: str, filename: str = "temp_video_recipe.mp4"):
     
     # 1. Try yt-dlp first (handles most social media + direct links often)
     ydl_opts = {
-        'outtmpl': abs_filename, # Force filename
-        # 'best' is safer when ffmpeg is missing to avoid separate audio/video streams
+        'outtmpl': abs_filename,
         'format': 'best[ext=mp4]/best', 
         'quiet': True,
         'overwrites': True,
-        'no_warnings': False, # Show warnings for debugging
-        'js_runtimes': {'node': {}}, # Use node which we confirmed is available
+        'no_warnings': False,
+        'js_runtimes': {'node': {}},
+        'remote_components': ['ejs:github'], # FIXED: Must be a list
         'nocheckcertificate': True,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'web'],
-                'skip': ['webpage', 'hls']
+                'player_client': ['web', 'tv'],
             }
         },
     }
     
     # Check for cookies file or environment variable
-    cookies_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
+    # We use a temp directory for Cloud Run compatibility as the rest of the FS is read-only
+    cookies_path = os.path.join(tempfile.gettempdir(), "youtube_cookies.txt")
     
-    # If YOUTUBE_COOKIES env var is provided, write it to a temp file (Cloud Run friendly)
+    # If YOUTUBE_COOKIES env var is provided, write it to a temp file
     if os.getenv("YOUTUBE_COOKIES"):
         try:
             with open(cookies_path, "w") as f:
@@ -862,53 +863,72 @@ def search_google_blogs(query: str, limit: int = 5):
 @tool
 def get_video_metadata(url: str):
     """
-    Extracts metadata (title, description) from a video URL using yt-dlp without downloading the video.
-    Useful for checking if a recipe is in the description before full processing.
+    Extracts comprehensive metadata (title, description, transcript, thumbnail) 
+    from a video URL using yt-dlp with Cloud Run bypasses.
     """
     import yt_dlp
     
+    # Absolute path check for cookies (Cloud Run /tmp/ or local temp is writable)
+    cookies_path = os.path.join(tempfile.gettempdir(), "youtube_cookies.txt")
+    if os.getenv("YOUTUBE_COOKIES"):
+        try:
+            # We only write if it's missing or if we want to ensure it's fresh
+            with open(cookies_path, "w", encoding='utf-8') as f:
+                # Ensure we strip leading/trailing whitespace which happens during copy-paste
+                cookie_data = os.getenv("YOUTUBE_COOKIES").strip()
+                f.write(cookie_data)
+        except Exception as e:
+            print(f" -> Warning: Could not write cookies to {cookies_path}: {e}")
+
     ydl_opts = {
         'skip_download': True,
         'quiet': True,
         'ignoreerrors': True,
         'no_warnings': True,
-        'extract_flat': 'in_playlist',  # Optimize playlists, just get metadata of video
+        'extract_flat': False, 
         'nocheckcertificate': True,
+        'socket_timeout': 30,
+        'js_runtimes': {'node': {}}, 
+        'remote_components': ['ejs:github'],
+        'writesubtitles': True,
+        'allsubtitles': False,
+        'subtitleslangs': ['en', '.*'],
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'web'],
-                'skip': ['webpage', 'hls']
+                'player_client': ['web', 'tv'],
             }
         },
     }
     
-    # Check for cookies file or environment variable
-    cookies_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
-    
-    # If YOUTUBE_COOKIES env var is provided, write it to a temp file
-    if os.getenv("YOUTUBE_COOKIES"):
-        try:
-            with open(cookies_path, "w") as f:
-                f.write(os.getenv("YOUTUBE_COOKIES"))
-        except Exception as e:
-            print(f" -> Error writing cookies.txt from env var: {e}")
-
     if os.path.exists(cookies_path):
         ydl_opts['cookiefile'] = cookies_path
-
-
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Check if this supports direct extraction without download
             info = ydl.extract_info(url, download=False)
-            if info:
-                title = info.get('title', '')
-                description = info.get('description', '')
-                thumbnail = info.get('thumbnail', '')
-                return {"title": title, "description": description, "thumbnail": thumbnail}
+            if not info:
+                return None
+                
+            title = info.get('title', '')
+            description = info.get('description', '')
+            thumbnail = info.get('thumbnail', '')
+            transcript = ""
+            
+            return {
+                "title": title, 
+                "description": description, 
+                "thumbnail": thumbnail,
+                "transcript": transcript,
+                "video_id": info.get('id', '')
+            }
     except Exception as e:
-        print(f"Error extracting metadata: {e}")
+        error_msg = str(e)
+        if "confirm you're not a bot" in error_msg or "Sign in" in error_msg:
+            print("--- 🚨 YOUTUBE BOT BLOCK DETECTED ---")
+            return {
+                "error": "YouTube is blocking our Cloud Run IP. You MUST provide cookies to fix this.",
+                "guide": "1. Export cookies from a logged-in browser using 'Get cookies.txt LOCALLY'. 2. Add the content to GitHub Secrets as 'YOUTUBE_COOKIES'. 3. Redeploy."
+            }
+        print(f"Error extracting metadata with yt-dlp: {e}")
         return None
-    
-    return None
+
