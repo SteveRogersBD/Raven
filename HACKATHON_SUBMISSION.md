@@ -8,7 +8,7 @@ We all watch recipe videos and posts online constantly—on YouTube, TikTok, Ins
 
 PlateIt transforms recipe videos into actionable cooking experiences:
 
-- **🎥 Automatic Recipe Extraction**: Paste a recipe video link or upload a video file. Gemini watches it and extracts ingredients, quantities, and step-by-step instructions automatically.
+- **🎥 Automatic Recipe Extraction**: Paste a recipe video link (From Youtube, Tiktok, Twitter, Instagram) or a recipe blog link. Our AI agent find the exact (yes you heard me right!) or recipe from that source.
 - **📚 Personal Cookbook**: Save extracted recipes to your digital cookbook for easy access anytime.
 - **�  Pantry Management**: Scan your fridge or ingredients with your camera. Gemini identifies what you have and builds your pantry inventory.
 - **🔍 Missing Ingredients Check**: When viewing a recipe, instantly see which ingredients you have and which you're missing.
