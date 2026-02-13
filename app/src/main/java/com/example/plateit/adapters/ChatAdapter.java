@@ -229,8 +229,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         private void extractAndStartRecipe(android.content.Context context, String url) {
-            android.widget.Toast.makeText(context, "Extracting recipe from video...", android.widget.Toast.LENGTH_SHORT)
-                    .show();
 
             com.example.plateit.requests.VideoRequest req = new com.example.plateit.requests.VideoRequest(url);
             com.example.plateit.api.RetrofitClient.getService().extractRecipe(req)
@@ -251,17 +249,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                 intent.putExtra("recipe_json", json);
                                 context.startActivity(intent);
                             } else {
-                                android.widget.Toast.makeText(context, "Failed to extract recipe",
-                                        android.widget.Toast.LENGTH_SHORT).show();
+                                // Extraction failed
                             }
                         }
 
                         @Override
                         public void onFailure(retrofit2.Call<com.example.plateit.responses.RecipeResponse> call,
                                 Throwable t) {
-                            android.widget.Toast
-                                    .makeText(context, "Error: " + t.getMessage(), android.widget.Toast.LENGTH_SHORT)
-                                    .show();
                         }
                     });
         }
@@ -302,8 +296,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     context.startActivity(browserIntent);
                     sheet.dismiss();
                 } else {
-                    android.widget.Toast
-                            .makeText(context, "Source URL not available", android.widget.Toast.LENGTH_SHORT).show();
+                    // Source not available
                 }
             });
 
@@ -317,7 +310,6 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
 
         private void fetchAndStartRecipe(android.content.Context context, int recipeId) {
-            android.widget.Toast.makeText(context, "Loading recipe...", android.widget.Toast.LENGTH_SHORT).show();
 
             com.example.plateit.api.RetrofitClient.getAgentService().getRecipeDetails(recipeId)
                     .enqueue(new retrofit2.Callback<com.example.plateit.responses.RecipeResponse>() {
@@ -334,18 +326,13 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                                 intent.putExtra("recipe_json", json);
                                 context.startActivity(intent);
                             } else {
-                                android.widget.Toast
-                                        .makeText(context, "Failed to load recipe", android.widget.Toast.LENGTH_SHORT)
-                                        .show();
+                                // Load failed
                             }
                         }
 
                         @Override
                         public void onFailure(retrofit2.Call<com.example.plateit.responses.RecipeResponse> call,
                                 Throwable t) {
-                            android.widget.Toast
-                                    .makeText(context, "Error: " + t.getMessage(), android.widget.Toast.LENGTH_SHORT)
-                                    .show();
                         }
                     });
         }

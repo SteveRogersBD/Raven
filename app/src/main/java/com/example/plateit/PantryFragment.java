@@ -89,7 +89,6 @@ public class PantryFragment extends Fragment {
 
     private void cookWithPantry() {
         if (pantryTypeList.isEmpty()) {
-            Toast.makeText(getContext(), "Pantry is empty! Add items first.", Toast.LENGTH_SHORT).show();
             return;
         }
         showIngredientSelectionDialog();
@@ -119,7 +118,7 @@ public class PantryFragment extends Fragment {
                     if (!selectedIngredients.isEmpty()) {
                         findRecipesByIngredients(selectedIngredients);
                     } else {
-                        Toast.makeText(getContext(), "Select at least one ingredient", Toast.LENGTH_SHORT).show();
+                        // Select at least one ingredient
                     }
                 })
                 .setNegativeButton("Cancel", null)
@@ -140,14 +139,13 @@ public class PantryFragment extends Fragment {
                         if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                             showRecipeResultsDialog(response.body());
                         } else {
-                            Toast.makeText(getContext(), "No matching recipes found.", Toast.LENGTH_SHORT).show();
+                            // No matching recipes found
                         }
                     }
 
                     @Override
                     public void onFailure(Call<List<com.example.plateit.responses.RecipeSummary>> call, Throwable t) {
                         loadingDialog.dismissDialog();
-                        Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -194,14 +192,13 @@ public class PantryFragment extends Fragment {
                             intent.putExtra("recipe_json", json);
                             startActivity(intent);
                         } else {
-                            Toast.makeText(getContext(), "Failed to load details.", Toast.LENGTH_SHORT).show();
+                            // Failed to load details
                         }
                     }
 
                     @Override
                     public void onFailure(Call<com.example.plateit.responses.RecipeResponse> call, Throwable t) {
                         loadingDialog.dismissDialog();
-                        Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -349,7 +346,7 @@ public class PantryFragment extends Fragment {
                 if (isGranted) {
                     launchCameraIntent();
                 } else {
-                    Toast.makeText(getContext(), "Camera permission required.", Toast.LENGTH_SHORT).show();
+                    // Camera permission required
                 }
             });
 
@@ -387,7 +384,7 @@ public class PantryFragment extends Fragment {
         try {
             cameraLauncher.launch(takePictureIntent);
         } catch (Exception e) {
-            Toast.makeText(getContext(), "Camera not found", Toast.LENGTH_SHORT).show();
+            // Camera not found
         }
     }
 
@@ -397,7 +394,6 @@ public class PantryFragment extends Fragment {
             processImage(bitmap);
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(getContext(), "Error loading image", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -432,14 +428,11 @@ public class PantryFragment extends Fragment {
                         List<PantryScanResponse.PantryItem> scannedItems = response.body().getItems();
                         if (scannedItems != null && !scannedItems.isEmpty()) {
                             saveBatchItems(scannedItems);
-                            Toast.makeText(getContext(), "Identified " + scannedItems.size() + " items!",
-                                    Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(getContext(), "No items found. Try a clearer photo.", Toast.LENGTH_SHORT)
-                                    .show();
+                            // No items found
                         }
                     } else {
-                        Toast.makeText(getContext(), "Failed: " + response.message(), Toast.LENGTH_SHORT).show();
+                        // Failed to scan
                     }
                     // Optimize: Delete temp file
                     file.delete();
@@ -448,7 +441,6 @@ public class PantryFragment extends Fragment {
                 @Override
                 public void onFailure(Call<PantryScanResponse> call, Throwable t) {
                     loadingDialog.dismissDialog();
-                    Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     file.delete();
                 }
             });
@@ -456,14 +448,12 @@ public class PantryFragment extends Fragment {
         } catch (Exception e) {
             loadingDialog.dismissDialog();
             e.printStackTrace();
-            Toast.makeText(getContext(), "Error processing image: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void saveItem(String name, String amount, String imageUrl) {
         String userId = sessionManager.getUserId();
         if (userId == null) {
-            Toast.makeText(getContext(), "User not logged in", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -480,14 +470,13 @@ public class PantryFragment extends Fragment {
                     sessionManager.setLastPantryFetchTime(0);
                     loadPantryItems(true);
                 } else {
-                    Toast.makeText(getContext(), "Failed to add item", Toast.LENGTH_SHORT).show();
+                    // Failed to add item
                 }
             }
 
             @Override
             public void onFailure(Call<PantryItem> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -496,8 +485,6 @@ public class PantryFragment extends Fragment {
         String userId = sessionManager.getUserId();
         if (userId == null)
             return;
-
-        Toast.makeText(getContext(), "Saving " + scannedItems.size() + " items...", Toast.LENGTH_SHORT).show();
 
         java.util.concurrent.atomic.AtomicInteger counter = new java.util.concurrent.atomic.AtomicInteger(
                 scannedItems.size());
@@ -536,7 +523,6 @@ public class PantryFragment extends Fragment {
 
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(getContext(), "Delete failed", Toast.LENGTH_SHORT).show();
             }
         });
     }

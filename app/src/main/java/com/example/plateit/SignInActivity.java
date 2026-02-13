@@ -47,8 +47,6 @@ public class SignInActivity extends AppCompatActivity {
             String password = etPassword.getText().toString();
 
             if (email.isEmpty() || password.isEmpty()) {
-                android.widget.Toast.makeText(SignInActivity.this, "Please enter email and password",
-                        android.widget.Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -76,16 +74,12 @@ public class SignInActivity extends AppCompatActivity {
                                         response.body().getUsername(),
                                         response.body().getFullName());
 
-                                android.widget.Toast.makeText(SignInActivity.this, "Sign In Successful",
-                                        android.widget.Toast.LENGTH_SHORT).show();
                                 // Proceed to Preferences Activity
                                 Intent intent = new Intent(SignInActivity.this, PreferencesActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intent);
                             } else {
-                                android.widget.Toast.makeText(SignInActivity.this,
-                                        "Sign In Failed: " + response.message(), android.widget.Toast.LENGTH_SHORT)
-                                        .show();
+                                // Sign In Failed silently
                             }
                         }
 
@@ -95,8 +89,6 @@ public class SignInActivity extends AppCompatActivity {
                             progressBar.setVisibility(android.view.View.GONE);
                             btnSignIn.setEnabled(true);
                             btnSignIn.setText("Sign In");
-                            android.widget.Toast.makeText(SignInActivity.this, "Error: " + t.getMessage(),
-                                    android.widget.Toast.LENGTH_SHORT).show();
                         }
                     });
         });

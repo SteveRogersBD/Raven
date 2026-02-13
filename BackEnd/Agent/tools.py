@@ -188,11 +188,13 @@ def _spoonacular_get(endpoint: str, params: dict):
     params["apiKey"] = api_key
     
     try:
-        response = requests.get(f"{base_url}{endpoint}", params=params)
+        response = requests.get(f"{base_url}{endpoint}", params=params, timeout=10)
         response.raise_for_status()
         return response.json()
+    except requests.exceptions.Timeout:
+        return {"error": "Spoonacular API timed out."}
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": f"Spoonacular API error: {str(e)}"}
 
 @tool
 def search_recipes(query: str, cuisine: str = None, diet: str = None, number: int = 5):
@@ -437,13 +439,32 @@ def download_video_file(url: str, filename: str = "temp_video_recipe.mp4"):
         'overwrites': True,
         'no_warnings': False,
         'js_runtimes': {'node': {}},
-        'remote_components': ['ejs:github'], # FIXED: Must be a list
+        'remote_components': ['ejs:github'],
         'nocheckcertificate': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Sec-Ch-Ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+        },
         'extractor_args': {
             'youtube': {
-                'player_client': ['web', 'tv'],
+                'player_client': ['web'],
+                'player_skip': ['configs', 'webpage'],
             }
         },
+        'socket_timeout': 90,
+        'retries': 3,
+        'fragment_retries': 3,
     }
     
     # Check for cookies file or environment variable
@@ -453,8 +474,8 @@ def download_video_file(url: str, filename: str = "temp_video_recipe.mp4"):
     # If YOUTUBE_COOKIES env var is provided, write it to a temp file
     if os.getenv("YOUTUBE_COOKIES"):
         try:
-            with open(cookies_path, "w") as f:
-                f.write(os.getenv("YOUTUBE_COOKIES"))
+            with open(cookies_path, "w", encoding='utf-8') as f:
+                f.write(os.getenv("YOUTUBE_COOKIES").strip())
         except Exception as e:
             print(f" -> Error writing cookies.txt from env var: {e}")
 
@@ -475,19 +496,36 @@ def download_video_file(url: str, filename: str = "temp_video_recipe.mp4"):
             print(f" -> yt-dlp created an empty file or failed.")
             if os.path.exists(abs_filename): os.remove(abs_filename)
     except Exception as e:
-        print(f" -> yt-dlp failed: {e}. Falling back to requests.")
+        # Don't say "falling back to requests" for social media as we skip it below
+        social_domains = ["youtube.com", "youtu.be", "instagram.com", "tiktok.com", "twitter.com", "x.com"]
+        is_social = any(domain in url.lower() for domain in social_domains)
+        
+        if not is_social:
+            print(f" -> yt-dlp failed: {e}. Falling back to requests.")
+        else:
+            print(f" -> yt-dlp failed on social media: {e}")
+            
         if os.path.exists(abs_filename): os.remove(abs_filename)
         
-    # 2. Fallback to direct request (for simple file servers)
+    # 2. Fallback to direct request (ONLY for direct file links, NOT social media)
+    social_domains = ["youtube.com", "youtu.be", "instagram.com", "tiktok.com", "twitter.com", "x.com"]
+    if any(domain in url.lower() for domain in social_domains):
+        print(f" -> No fallback for social media URL: {url}")
+        return f"Error: Could not download video from {url}"
+
     try:
-        with requests.get(url, stream=True) as r:
+        with requests.get(url, stream=True, timeout=30) as r:
             r.raise_for_status()
-            with open(filename, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192): 
+            with open(abs_filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
-        return abs_filename
+        
+        if os.path.exists(abs_filename) and os.path.getsize(abs_filename) > 0:
+            return abs_filename
     except Exception as e:
-        return f"Error downloading video: {e}"
+        print(f" -> Direct download fallback failed: {e}")
+        
+    return f"Error: Failed to download video from {url}"
 
 # --- YouTube Tools ---
 
@@ -916,18 +954,36 @@ def get_video_metadata(url: str):
         'ignoreerrors': True,
         'no_warnings': True,
         'extract_flat': False, 
-        'nocheckcertificate': True,
-        'socket_timeout': 30,
-        'js_runtimes': {'node': {}}, 
+        'js_runtimes': {'node': {}},
         'remote_components': ['ejs:github'],
+        'nocheckcertificate': True,
+        'socket_timeout': 60,
         'writesubtitles': True,
         'allsubtitles': False,
         'subtitleslangs': ['en', '.*'],
+        'retries': 3,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Sec-Ch-Ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+        },
         'extractor_args': {
             'youtube': {
-                'player_client': ['web', 'tv'],
+                'player_client': ['web'],
+                'player_skip': ['configs', 'webpage'],
             }
         },
+        'socket_timeout': 90,
     }
     
     if os.path.exists(cookies_path):
@@ -953,11 +1009,57 @@ def get_video_metadata(url: str):
             }
     except Exception as e:
         error_msg = str(e)
-        if "confirm you're not a bot" in error_msg or "Sign in" in error_msg:
-            print("--- 🚨 YOUTUBE BOT BLOCK DETECTED ---")
+        bot_keywords = [
+            "confirm you're not a bot", "Sign in", "INNERTUBE_CONTEXT", 
+            "extractor error", "KeyError", "player response", "initial data"
+        ]
+        
+        # If it's a YouTube URL and we have an error, we should be aggressive with the API fallback
+        is_youtube = any(x in url.lower() for x in ["youtube.com", "youtu.be"])
+        
+        if is_youtube or any(kd in error_msg for kd in bot_keywords):
+            print(f"--- 🚨 YOUTUBE ERROR (FALLING BACK TO API) ---")
+            
+            # 1. Extract ID manually (Local call, no tools. prefix)
+            vid_id = extract_video_id(url)
+            print(f" -> Extracted Video ID: {vid_id}")
+            
+            if vid_id and os.getenv("YT_API_KEY"):
+                from googleapiclient.discovery import build
+                try:
+                    youtube = build('youtube', 'v3', developerKey=os.getenv("YT_API_KEY"))
+                    request = youtube.videos().list(part="snippet", id=vid_id)
+                    response = request.execute()
+                    
+                    if response.get("items"):
+                        item = response["items"][0]["snippet"]
+                        title = item.get("title", "")
+                        description = item.get("description", "")
+                        thumbnail = item.get("thumbnails", {}).get("high", {}).get("url", "")
+                        
+                        # New: Try youtube_transcript_api for transcript fallback
+                        transcript = ""
+                        try:
+                            from youtube_transcript_api import YouTubeTranscriptApi
+                            transcript_list = YouTubeTranscriptApi.get_transcript(vid_id)
+                            transcript = " ".join([t['text'] for t in transcript_list])
+                        except Exception as t_e:
+                            print(f"Transcript API fallback failed: {t_e}")
+
+                        return {
+                            "title": title,
+                            "description": description,
+                            "thumbnail": thumbnail,
+                            "transcript": transcript,
+                            "video_id": vid_id,
+                            "is_api_fallback": True
+                        }
+                except Exception as api_e:
+                    print(f"Error fetching metadata via YouTube API: {api_e}")
+
             return {
-                "error": "YouTube is blocking our Cloud Run IP. You MUST provide cookies to fix this.",
-                "guide": "1. Export cookies from a logged-in browser using 'Get cookies.txt LOCALLY'. 2. Add the content to GitHub Secrets as 'YOUTUBE_COOKIES'. 3. Redeploy."
+                "error": "YouTube is blocking our Cloud Run IP. You MUST provide cookies to fix this for downloading/transcripts.",
+                "guide": "1. Export cookies from a logged-in browser. 2. Update .env or GH Secrets as 'YOUTUBE_COOKIES'."
             }
         print(f"Error extracting metadata with yt-dlp: {e}")
         return None

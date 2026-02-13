@@ -83,10 +83,6 @@ public class CookingModeActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             sessionId = response.body().getId();
                             android.util.Log.d("PlateIt", "Cooking Session Started: " + sessionId);
-                            android.widget.Toast
-                                    .makeText(com.example.plateit.CookingModeActivity.this,
-                                            "Session Started (" + sessionId + ")", android.widget.Toast.LENGTH_SHORT)
-                                    .show();
                         } else {
                             android.util.Log.e("PlateIt", "Session Start Failed: " + response.code());
                         }
@@ -134,7 +130,6 @@ public class CookingModeActivity extends AppCompatActivity {
 
         if (existingSessionId != -1) {
             this.sessionId = existingSessionId;
-            android.widget.Toast.makeText(this, "Resuming Session...", android.widget.Toast.LENGTH_SHORT).show();
         } else {
             int cookbookId = getIntent().getIntExtra("cookbook_id", -1);
             if (cookbookId != -1) {
@@ -155,7 +150,6 @@ public class CookingModeActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             android.util.Log.e("CookingMode", "Error parsing recipe JSON", e);
-            Toast.makeText(this, "Error loading recipe data: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
 
         if (currentRecipe != null) {
@@ -176,7 +170,6 @@ public class CookingModeActivity extends AppCompatActivity {
 
         if (steps == null || steps.isEmpty()) {
             android.util.Log.e("CookingMode", "No steps found!");
-            Toast.makeText(this, "Error: Recipe has no steps!", Toast.LENGTH_LONG).show();
             // finish();
             // Create a dummy step to prevent crash if that's what keeps it open
             steps = new ArrayList<>();
@@ -232,7 +225,6 @@ public class CookingModeActivity extends AppCompatActivity {
                 page.setScaleY(0.85f + (1 - absPos) * 0.15f);
             });
         } catch (Exception e) {
-            Toast.makeText(this, "Adapter Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
 
         // Set initial step if resuming
@@ -398,7 +390,7 @@ public class CookingModeActivity extends AppCompatActivity {
         try {
             startActivityForResult(takePictureIntent, CAMERA_REQUEST_CODE);
         } catch (android.content.ActivityNotFoundException e) {
-            Toast.makeText(this, "No camera app found", Toast.LENGTH_SHORT).show();
+            // Camera not found
         }
     }
 
@@ -435,7 +427,6 @@ public class CookingModeActivity extends AppCompatActivity {
 
     private void handleUserQuery(String query, android.graphics.Bitmap image) {
         if (currentRecipe == null) {
-            Toast.makeText(this, "Error: missing recipe data", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -540,16 +531,13 @@ public class CookingModeActivity extends AppCompatActivity {
 
                             speak(reply);
                         } else {
-                            Toast.makeText(CookingModeActivity.this, "Server rejected request", Toast.LENGTH_SHORT)
-                                    .show();
+                            // Server rejected request
                         }
                     }
 
                     public void onFailure(retrofit2.Call<com.example.plateit.responses.ChatResponse> call,
                             Throwable t) {
                         setApiLoading(false);
-                        Toast.makeText(CookingModeActivity.this, "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT)
-                                .show();
                     }
                 });
     }
@@ -585,7 +573,7 @@ public class CookingModeActivity extends AppCompatActivity {
                 startActivity(browserIntent);
                 sheet.dismiss();
             } else {
-                Toast.makeText(this, "Source URL not available", Toast.LENGTH_SHORT).show();
+                // Source not available
             }
         });
 
@@ -624,15 +612,13 @@ public class CookingModeActivity extends AppCompatActivity {
                             finish(); // Close current activity
                             startActivity(intent);
                         } else {
-                            Toast.makeText(CookingModeActivity.this, "Failed to load recipe", Toast.LENGTH_SHORT)
-                                    .show();
+                            // Failed to load
                         }
                     }
 
                     public void onFailure(retrofit2.Call<com.example.plateit.responses.RecipeResponse> call,
                             Throwable t) {
                         setApiLoading(false);
-                        Toast.makeText(CookingModeActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -649,7 +635,7 @@ public class CookingModeActivity extends AppCompatActivity {
                         promptForTextWithImage(imageBitmap);
                     }
                 } else {
-                    Toast.makeText(this, "Failed to capture image", Toast.LENGTH_SHORT).show();
+                    // Failed to capture
                 }
             } else if (requestCode == GALLERY_REQUEST_CODE) {
                 android.net.Uri selectedImage = data.getData();
@@ -659,7 +645,7 @@ public class CookingModeActivity extends AppCompatActivity {
                                 .getBitmap(this.getContentResolver(), selectedImage);
                         promptForTextWithImage(bitmap);
                     } catch (java.io.IOException e) {
-                        Toast.makeText(this, "Error loading image", Toast.LENGTH_SHORT).show();
+                        // Error loading
                     }
                 }
             }
@@ -674,7 +660,6 @@ public class CookingModeActivity extends AppCompatActivity {
             @Override
             public void onReadyForSpeech(Bundle params) {
                 btnMic.setImageTintList(getColorStateList(android.R.color.holo_red_light));
-                Toast.makeText(CookingModeActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -770,9 +755,9 @@ public class CookingModeActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+                // Permission Granted
             } else {
-                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+                // Permission Denied
             }
         }
     }

@@ -188,7 +188,10 @@ def node_scrape_website(state: AgentState):
     response = extract_recipe_from_url.invoke(url)
     
     if isinstance(response, str) and "Error" in response:
-         return {"text_content": response}
+         print(f"   -> Spoonacular extraction failed: {response}. Trying raw scrape fallback.")
+         # Fallback: Scrape raw text and pass it to the text extractor
+         raw_text = scrape_website_text.invoke(url)
+         return {"text_content": raw_text or response}
 
     name = response.get('title', 'Unknown Recipe')
     base_img_url = "https://img.spoonacular.com/ingredients_100x100/"
@@ -206,10 +209,35 @@ def node_scrape_website(state: AgentState):
         ))
 
     steps = []
-    analyzed = response.get('analyzedInstructions', [])
-    if analyzed:
-        for step in analyzed[0].get('steps', []):
-            steps.append(RecipeStep(instruction=step.get('step', '')))
+    analyzed_instructions = response.get('analyzedInstructions', [])
+    
+    # Loop through all instruction sets (some recipes have "For the Sauce", "For the Meat", etc.)
+    for instruction_set in analyzed_instructions:
+        for step in instruction_set.get('steps', []):
+            instr_text = step.get('step', '')
+            
+            # Heuristic for step image: Try to find the 'main' ingredient or equipment in this step
+            step_img = None
+            
+            # Check ingredients in step
+            if step.get('ingredients'):
+                ing_img = step['ingredients'][0].get('image')
+                if ing_img:
+                    step_img = f"https://img.spoonacular.com/ingredients_100x100/{ing_img}"
+            
+            # Check equipment in step if no ingredient image
+            if not step_img and step.get('equipment'):
+                eq_img = step['equipment'][0].get('image')
+                if eq_img:
+                    step_img = f"https://img.spoonacular.com/equipment_100x100/{eq_img}"
+            
+            steps.append(RecipeStep(
+                instruction=instr_text,
+                imageUrl=step_img
+            ))
+            
+    # Fallback: if we have NO steps images, use the source_image as a placeholder for the first/last steps if it makes sense?
+    # Probably better to leave it to node_enrich_steps which we have in the graph.
             
     total_time = f"{response.get('readyInMinutes', 0)} mins"
     recipe = Recipe(name=name, steps=steps, ingredients=ingredients, total_time=total_time, source=url, source_image=source_image)
@@ -244,17 +272,25 @@ def node_check_video_metadata(state: AgentState):
             if not results.get("video_thumbnail"):
                 results["video_thumbnail"] = f"https://img.youtube.com/vi/{vid_id}/mqdefault.jpg"
     
-    # Heuristic: If description is very short, unlikely to be a recipe
-    if len(description) < 100:
+    # If we have a transcript from the fallback, use it!
+    transcript = meta.get("transcript", "")
+    full_text = f"Title: {title}\nDescription: {description}"
+    if transcript:
+        full_text += f"\n\nTranscript:\n{transcript}"
+    
+    # Heuristic: If we spent the effort to get a transcript, it's likely sufficient for text extraction
+    # unless it's extremely short.
+    if len(description) < 100 and not transcript:
         results["metadata_sufficient"] = "no"
         return results
 
     prompt = f"""
-    Analyze this video description. Does it contain a FULL recipe with:
-    1. A list of ingredients with quantities?
-    2. Step-by-step cooking instructions?
+    Analyze this video information (Description and potentially Transcript). 
+    Does it contain enough information to reconstruct a FULL recipe with:
+    1. Ingredients with quantities?
+    2. Cooking instructions?
     
-    Description:
+    Content:
     {full_text}
     
     Return JSON: {{"is_complete": true/false}}
@@ -266,28 +302,31 @@ def node_check_video_metadata(state: AgentState):
         result = json.loads(content)
         
         if result.get("is_complete"):
-            print("   ✅ Full recipe found in description! Skipping video download.")
+            print("   ✅ Full recipe found in text/transcript! Skipping video download.")
             results.update({
                 "metadata_sufficient": "yes", 
-                "description": full_text + "\n(Source: Video Description)", 
+                "description": description, 
+                "transcript": transcript,
                 "text_content": full_text
             })
         else:
-            print("   ❌ Description incomplete. Proceeding to video download.")
+            print("   ❌ Text info incomplete. Proceeding to video download.")
             results["metadata_sufficient"] = "no"
+            results["transcript"] = transcript # Keep it anyway
             
     except Exception as e:
         print(f"Error checking metadata: {e}")
         results["metadata_sufficient"] = "no"
+        results["transcript"] = transcript
         
     return results
  
 
     
-def node_get_youtube_data(state: AgentState):
-    """Fetches YouTube data using yt-dlp (consolidated tool)."""
+def node_get_video_metadata(state: AgentState):
+    """Fetches video data using yt-dlp (consolidated tool)."""
     url = state["url"]
-    print(f"--- Processing YouTube: {url} ---")
+    print(f"--- Fetching Video Metadata: {url} ---")
     
     # Use the consolidated tool which has our cookie/bot bypasses
     meta = get_video_metadata.invoke(url)
@@ -428,11 +467,14 @@ def node_recipe_from_dish_image(state: AgentState):
 
 def node_extract_from_text(state: AgentState):
     """Standard extraction for text/transcript (Orchestrator)."""
-    content = ""
-    if state.get("text_content"):
-        content = f"Website: {state['text_content']}"
-    elif state.get("transcript"):
-        content = f"Transcript: {state['transcript']} \n Descr: {state['description']}"
+    transcript = state.get("transcript")
+    description = state.get("description")
+    text_content = state.get("text_content")
+
+    if text_content:
+        content = f"Content: {text_content}"
+    elif transcript or description:
+        content = f"Transcript: {transcript or 'None'}\nDescription: {description or 'None'}"
     
     if not content: return {}
     
@@ -482,19 +524,25 @@ def enrich_ingredients(state: AgentState):
         current_img = ing.imageUrl
         if not current_img or "http" not in current_img:
             # 1. Try Fast Heuristic first (Free, Instant)
-            # The invoke method on a @tool returns a string directly
             url = get_ingredient_image_url_fast.invoke(ing.name)
             
-            # 2. Heuristic is dumb (just string formatting), so it always returns a URL.
-            # Real validation would check 404, but for speed we trust it OR 
-            # if we wanted strict correctness, we'd HEAD check it here.
-            # But per user request, we just use it. 
+            # 2. VALIDATION: Check if the heuristic URL actually works
+            is_valid = False
+            if url and "http" in url:
+                try:
+                    # Use a short timeout to keep it snappy
+                    head_resp = requests.head(url, timeout=1.5)
+                    if head_resp.status_code == 200:
+                        is_valid = True
+                except:
+                    pass
             
-            # If for some reason the tool failed (rare for this simple tool):
-            if not url or "Error" in url:
-                 url = get_ingredient_image_url.invoke(ing.name) # Fallback to API
+            # 3. Fallback to API if heuristic is broken (404, timeout, etc.)
+            if not is_valid:
+                print(f"   -> Heuristic image miss for '{ing.name}', using API fallback...")
+                url = get_ingredient_image_url.invoke(ing.name)
             
-            if url and "Error" in url: url = None # Clean up error messages
+            if url and "Error" in url: url = None
             
             updated.append(Ingredient(name=ing.name, amount=ing.amount, imageUrl=url))
         else:
@@ -601,7 +649,7 @@ graph = StateGraph(AgentState)
 graph.add_node("process_video_file", node_process_video_file)
 graph.add_node("process_image_file", node_process_image_file)
 graph.add_node("scrape_website", node_scrape_website)
-graph.add_node("get_youtube_data", node_get_youtube_data)
+graph.add_node("get_video_metadata", node_get_video_metadata)
 graph.add_node("check_video_metadata", node_check_video_metadata)
 
 # 2. Logic Nodes
@@ -632,6 +680,12 @@ def route_scrape_logic(state):
     if state.get("recipe"): return "formatted"
     return "raw_text"
 
+def route_video_download_completion(state: AgentState):
+    """Routes based on whether the video was actually downloaded."""
+    if state.get("video_file_path") and os.path.exists(state["video_file_path"]):
+        return "multimodal"
+    return "metadata_fallback"
+
 graph.add_conditional_edges(START, route_input, {
     "youtube": "check_video_metadata",
     "video_file": "check_video_metadata",
@@ -647,15 +701,19 @@ graph.add_conditional_edges("check_video_metadata", route_video_metadata, {
     "extract_text": "extract_from_text",
     "download_video": "process_video_file"
 })
+graph.add_edge("get_video_metadata", "extract_from_text")
 
-graph.add_edge("get_youtube_data", "extract_from_text")
+graph.add_conditional_edges("process_video_file", route_video_download_completion, {
+    "multimodal": "extract_text_from_video",
+    "metadata_fallback": "get_video_metadata"
+})
 
 graph.add_conditional_edges("scrape_website", route_scrape_logic, {
     "formatted": "polish_recipe", # Route through refiner
     "raw_text": "extract_from_text"
 })
 
-graph.add_edge("process_video_file", "extract_text_from_video")
+# process_video_file is now a conditional predecessor
 graph.add_edge("process_image_file", "analyze_image_type")
 
 graph.add_conditional_edges("analyze_image_type", route_image_logic, {

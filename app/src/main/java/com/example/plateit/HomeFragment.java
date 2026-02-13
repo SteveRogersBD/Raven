@@ -113,7 +113,6 @@ public class HomeFragment extends Fragment {
 
             String url = etPasteUrl.getText().toString().trim();
             if (url.isEmpty()) {
-                Toast.makeText(getContext(), "Please enter a link or question", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -139,8 +138,7 @@ public class HomeFragment extends Fragment {
         if (userId != null) {
             fetchVideoRecommendations(userId, videoAdapter);
         } else {
-            // Fallback or Prompt Login
-            Toast.makeText(getContext(), "Please sign in for recommendations", Toast.LENGTH_SHORT).show();
+            // Recommendation prompt
         }
 
         // Chat FAB
@@ -271,7 +269,7 @@ public class HomeFragment extends Fragment {
                 if (isGranted) {
                     launchCamera();
                 } else {
-                    Toast.makeText(getContext(), "Camera permission required.", Toast.LENGTH_SHORT).show();
+                    // Camera permission required
                 }
             });
 
@@ -296,7 +294,7 @@ public class HomeFragment extends Fragment {
         try {
             cameraLauncher.launch(takePictureIntent);
         } catch (android.content.ActivityNotFoundException e) {
-            Toast.makeText(getContext(), "Camera not found.", Toast.LENGTH_SHORT).show();
+            // Camera not found
         }
     }
 
@@ -345,7 +343,6 @@ public class HomeFragment extends Fragment {
             uploadImageForRecipe(file);
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(getContext(), "Error processing camera image", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -368,7 +365,6 @@ public class HomeFragment extends Fragment {
             uploadImageForRecipe(file);
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(getContext(), "Error processing gallery image", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -394,7 +390,7 @@ public class HomeFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     showRecipePreviewDialog(response.body());
                 } else {
-                    Toast.makeText(getContext(), "Failed to identify dish.", Toast.LENGTH_SHORT).show();
+                    // Identification failed
                 }
                 file.delete();
             }
@@ -402,7 +398,6 @@ public class HomeFragment extends Fragment {
             @Override
             public void onFailure(Call<RecipeResponse> call, Throwable t) {
                 loadingDialog.dismissDialog();
-                Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                 file.delete();
             }
         });
@@ -485,15 +480,13 @@ public class HomeFragment extends Fragment {
                         if (response.isSuccessful() && response.body() != null) {
                             showRecipePreviewDialog(response.body());
                         } else {
-                            Toast.makeText(getContext(), "Extraction failed. Try another link.", Toast.LENGTH_SHORT)
-                                    .show();
+                            // Extraction failed
                         }
                     }
 
                     @Override
                     public void onFailure(Call<RecipeResponse> call, Throwable t) {
                         loadingDialog.dismissDialog();
-                        Toast.makeText(getContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }

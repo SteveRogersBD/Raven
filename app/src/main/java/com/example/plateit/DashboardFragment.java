@@ -328,8 +328,6 @@ public class DashboardFragment extends Fragment {
             @Override
             public void onFailure(Call<List<CookbookEntry>> call, Throwable t) {
                 android.util.Log.e("PlateIt", "Cookbook Fetch Error: " + t.getMessage(), t);
-                Toast.makeText(getContext(), "Failed to load recipes", Toast.LENGTH_SHORT).show();
-
                 // Still try to find sessions
             }
         });
@@ -422,7 +420,7 @@ public class DashboardFragment extends Fragment {
             intent.putExtra("cookbook_id", entry.getId());
             startActivity(intent);
         } else {
-            Toast.makeText(getContext(), "Recipe data corrupted", Toast.LENGTH_SHORT).show();
+            // Recipe data corrupted
         }
     }
 
@@ -435,7 +433,6 @@ public class DashboardFragment extends Fragment {
                         @Override
                         public void onResponse(Call<Void> call, Response<Void> response) {
                             if (response.isSuccessful()) {
-                                Toast.makeText(getContext(), "Deleted", Toast.LENGTH_SHORT).show();
                                 fetchCookbook();
                                 fetchUserStats();
                                 fetchActiveSession();
@@ -445,7 +442,6 @@ public class DashboardFragment extends Fragment {
 
                         @Override
                         public void onFailure(Call<Void> call, Throwable t) {
-                            Toast.makeText(getContext(), "Delete failed", Toast.LENGTH_SHORT).show();
                         }
                     });
                 })
@@ -546,7 +542,6 @@ public class DashboardFragment extends Fragment {
 
                         @Override
                         public void onFailure(Call<Void> call, Throwable t) {
-                            Toast.makeText(getContext(), "Failed to delete list", Toast.LENGTH_SHORT).show();
                         }
                     });
                 })

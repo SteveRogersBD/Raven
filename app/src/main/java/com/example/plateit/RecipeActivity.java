@@ -35,7 +35,6 @@ public class RecipeActivity extends AppCompatActivity {
             }
         } catch (Exception e) {
             android.util.Log.e("PlateIt", "RecipeActivity: JSON Parse Error", e);
-            android.widget.Toast.makeText(this, "Error parsing recipe JSON", android.widget.Toast.LENGTH_LONG).show();
         }
 
         // Initialize SessionManager
@@ -59,8 +58,6 @@ public class RecipeActivity extends AppCompatActivity {
                 return;
             String userId = sessionManager.getUserId();
             if (userId == null) {
-                android.widget.Toast.makeText(this, "Please log in to save recipes", android.widget.Toast.LENGTH_SHORT)
-                        .show();
                 return;
             }
 
@@ -83,15 +80,10 @@ public class RecipeActivity extends AppCompatActivity {
                                 cookbookId[0] = response.body().getId();
                                 btnSave.setText("Saved!");
                                 android.util.Log.d("PlateIt", "Recipe saved successfully. ID: " + cookbookId[0]);
-                                android.widget.Toast.makeText(RecipeActivity.this, "Recipe saved to cookbook!",
-                                        android.widget.Toast.LENGTH_SHORT).show();
-                            } else {
                                 android.util.Log.e("PlateIt",
                                         "Save failed: " + response.code() + " " + response.message());
                                 btnSave.setEnabled(true);
                                 btnSave.setText("Save to My Cookbook");
-                                android.widget.Toast.makeText(RecipeActivity.this, "Failed to save",
-                                        android.widget.Toast.LENGTH_SHORT).show();
                             }
                         }
 
@@ -101,8 +93,6 @@ public class RecipeActivity extends AppCompatActivity {
                             android.util.Log.e("PlateIt", "Save Error: " + t.getMessage(), t);
                             btnSave.setEnabled(true);
                             btnSave.setText("Save to My Cookbook");
-                            android.widget.Toast.makeText(RecipeActivity.this, "Error: " + t.getMessage(),
-                                    android.widget.Toast.LENGTH_SHORT).show();
                         }
                     });
         });
@@ -131,7 +121,7 @@ public class RecipeActivity extends AppCompatActivity {
 
                 startActivity(intent);
             } else {
-                android.widget.Toast.makeText(this, "No steps available!", android.widget.Toast.LENGTH_SHORT).show();
+                // No steps available
             }
         });
 
@@ -139,10 +129,7 @@ public class RecipeActivity extends AppCompatActivity {
 
         // Check for null recipe and log
         if (recipe != null) {
-            // Toast for success debugging
-            // android.widget.Toast.makeText(this, "Recipe Loaded: " + recipe.getName(),
-            // android.widget.Toast.LENGTH_LONG)
-            // .show();
+            // Header
 
             // Header
             if (getSupportActionBar() != null)
@@ -214,8 +201,6 @@ public class RecipeActivity extends AppCompatActivity {
 
         } else {
             android.util.Log.e("PlateIt", "RecipeActivity: Recipe is NULL!");
-            android.widget.Toast.makeText(this, "Error: Could not load recipe data", android.widget.Toast.LENGTH_LONG)
-                    .show();
             finish();
         }
     }
@@ -259,7 +244,6 @@ public class RecipeActivity extends AppCompatActivity {
             return;
         String userId = new com.example.plateit.utils.SessionManager(this).getUserId();
         if (userId == null) {
-            android.widget.Toast.makeText(this, "Please log in first", android.widget.Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -282,12 +266,8 @@ public class RecipeActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             currentShoppingList = response.body().getList();
                             btn.setText("View Shopping List");
-                            android.widget.Toast.makeText(RecipeActivity.this, response.body().getMessage(),
-                                    android.widget.Toast.LENGTH_LONG).show();
                         } else {
                             btn.setText("Create Shopping List");
-                            android.widget.Toast.makeText(RecipeActivity.this, "Failed: " + response.message(),
-                                    android.widget.Toast.LENGTH_SHORT).show();
                         }
                     }
 
@@ -297,8 +277,6 @@ public class RecipeActivity extends AppCompatActivity {
                             Throwable t) {
                         btn.setEnabled(true);
                         btn.setText("Create Shopping List");
-                        android.widget.Toast.makeText(RecipeActivity.this, "Error: " + t.getMessage(),
-                                android.widget.Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -339,16 +317,13 @@ public class RecipeActivity extends AppCompatActivity {
                     public void onResponse(retrofit2.Call<com.example.plateit.responses.ShoppingList> call,
                             retrofit2.Response<com.example.plateit.responses.ShoppingList> response) {
                         if (response.isSuccessful()) {
-                            android.widget.Toast.makeText(RecipeActivity.this, "Shopping list updated!",
-                                    android.widget.Toast.LENGTH_SHORT).show();
+                            // Shopping list updated successfully
                         }
                     }
 
                     @Override
                     public void onFailure(retrofit2.Call<com.example.plateit.responses.ShoppingList> call,
                             Throwable t) {
-                        android.widget.Toast.makeText(RecipeActivity.this, "Failed to update: " + t.getMessage(),
-                                android.widget.Toast.LENGTH_SHORT).show();
                     }
                 });
     }

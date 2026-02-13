@@ -40,7 +40,6 @@ public class ChatActivity extends AppCompatActivity {
                     pendingImageUri = uri;
                     // Provide feedback that image is selected
                     btnAttachImage.setColorFilter(getColor(R.color.app_primary));
-                    Toast.makeText(this, "Image attached!", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -150,7 +149,6 @@ public class ChatActivity extends AppCompatActivity {
                 imageBase64 = android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP);
             } catch (Exception e) {
                 e.printStackTrace();
-                Toast.makeText(this, "Failed to process image", Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -244,7 +242,6 @@ public class ChatActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             List<com.example.plateit.models.ChatSession> sessions = response.body();
                             if (sessions.isEmpty()) {
-                                Toast.makeText(ChatActivity.this, "No history found", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             String[] titles = new String[sessions.size()];
@@ -260,14 +257,13 @@ public class ChatActivity extends AppCompatActivity {
                                     })
                                     .show();
                         } else {
-                            Toast.makeText(ChatActivity.this, "No history found", Toast.LENGTH_SHORT).show();
+                            // History not found
                         }
                     }
 
                     @Override
                     public void onFailure(retrofit2.Call<List<com.example.plateit.models.ChatSession>> call,
                             Throwable t) {
-                        Toast.makeText(ChatActivity.this, "Error fetching history", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -303,7 +299,6 @@ public class ChatActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(retrofit2.Call<List<com.example.plateit.responses.ChatHistoryResponse>> call,
                             Throwable t) {
-                        Toast.makeText(ChatActivity.this, "Failed to load history", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

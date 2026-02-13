@@ -62,7 +62,7 @@ public class PaywallActivity extends AppCompatActivity {
             if (monthlyPackage != null) {
                 purchasePackage(monthlyPackage);
             } else {
-                Toast.makeText(this, "Fetching plan details...", Toast.LENGTH_SHORT).show();
+                // Fetching plan details...
             }
         });
 
@@ -98,21 +98,15 @@ public class PaywallActivity extends AppCompatActivity {
                         rbMonthly.setVisibility(View.VISIBLE);
                     } else {
                         rbMonthly.setVisibility(View.GONE);
-                        Toast.makeText(PaywallActivity.this, "Offering found but has no packages.", Toast.LENGTH_SHORT)
-                                .show();
                     }
                 } else {
                     android.util.Log.e("Paywall", "No offerings found at all in RevenueCat.");
-                    Toast.makeText(PaywallActivity.this, "No Offerings found. Check Product Catalog in RevenueCat.",
-                            Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onError(@NonNull PurchasesError error) {
                 loadingDialog.dismissDialog();
-                Toast.makeText(PaywallActivity.this, "Error fetching prices: " + error.getMessage(), Toast.LENGTH_LONG)
-                        .show();
             }
         });
     }
@@ -132,8 +126,6 @@ public class PaywallActivity extends AppCompatActivity {
                     // Unlock Pro Features
                     TokenManager.getInstance(PaywallActivity.this).forceRefreshProStatus(() -> {
                         runOnUiThread(() -> {
-                            Toast.makeText(PaywallActivity.this, "Welcome to Pro! 50 Tokens Unlocked!",
-                                    Toast.LENGTH_LONG).show();
                             finish();
                         });
                     });
@@ -144,8 +136,7 @@ public class PaywallActivity extends AppCompatActivity {
             public void onError(@NonNull PurchasesError error, boolean userCancelled) {
                 loadingDialog.dismissDialog();
                 if (!userCancelled) {
-                    Toast.makeText(PaywallActivity.this, "Purchase failed: " + error.getMessage(), Toast.LENGTH_SHORT)
-                            .show();
+                    // Purchase failed
                 }
             }
         });
@@ -163,20 +154,17 @@ public class PaywallActivity extends AppCompatActivity {
 
                     TokenManager.getInstance(PaywallActivity.this).forceRefreshProStatus(() -> {
                         runOnUiThread(() -> {
-                            Toast.makeText(PaywallActivity.this, "Purchases restored!", Toast.LENGTH_SHORT).show();
                             finish();
                         });
                     });
                 } else {
-                    Toast.makeText(PaywallActivity.this, "No active subscriptions found.", Toast.LENGTH_SHORT).show();
+                    // No active subscriptions found
                 }
             }
 
             @Override
             public void onError(@NonNull PurchasesError error) {
                 loadingDialog.dismissDialog();
-                Toast.makeText(PaywallActivity.this, "Restore failed: " + error.getMessage(), Toast.LENGTH_SHORT)
-                        .show();
             }
         });
     }

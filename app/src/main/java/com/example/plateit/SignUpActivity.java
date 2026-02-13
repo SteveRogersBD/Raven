@@ -45,9 +45,6 @@ public class SignUpActivity extends AppCompatActivity {
             String password = etPassword.getText().toString();
 
             if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                android.widget.Toast
-                        .makeText(SignUpActivity.this, "Please fill all fields", android.widget.Toast.LENGTH_SHORT)
-                        .show();
                 return;
             }
 
@@ -75,16 +72,12 @@ public class SignUpActivity extends AppCompatActivity {
                                         response.body().getUsername(),
                                         response.body().getFullName());
 
-                                android.widget.Toast.makeText(SignUpActivity.this, "Sign Up Successful",
-                                        android.widget.Toast.LENGTH_SHORT).show();
                                 // Proceed to Preferences Activity
                                 Intent intent = new Intent(SignUpActivity.this, PreferencesActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(intent);
                             } else {
-                                android.widget.Toast.makeText(SignUpActivity.this,
-                                        "Sign Up Failed: " + response.message(), android.widget.Toast.LENGTH_SHORT)
-                                        .show();
+                                // Sign Up Failed silently or handled by other UI elements if any
                             }
                         }
 
@@ -94,8 +87,6 @@ public class SignUpActivity extends AppCompatActivity {
                             progressBar.setVisibility(android.view.View.GONE);
                             btnSignUp.setEnabled(true);
                             btnSignUp.setText("Sign Up");
-                            android.widget.Toast.makeText(SignUpActivity.this, "Error: " + t.getMessage(),
-                                    android.widget.Toast.LENGTH_SHORT).show();
                         }
                     });
         });

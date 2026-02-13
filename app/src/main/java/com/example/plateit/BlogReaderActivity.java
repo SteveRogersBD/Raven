@@ -53,14 +53,13 @@ public class BlogReaderActivity extends AppCompatActivity {
                         if (response.isSuccessful() && response.body() != null) {
                             startRecipePreview(response.body());
                         } else {
-                            Toast.makeText(BlogReaderActivity.this, "Extraction failed.", Toast.LENGTH_SHORT).show();
+                            // Extraction failed
                         }
                     }
 
                     @Override
                     public void onFailure(Call<RecipeResponse> call, Throwable t) {
                         progressDialog.dismiss();
-                        Toast.makeText(BlogReaderActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
