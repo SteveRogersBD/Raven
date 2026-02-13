@@ -76,16 +76,32 @@ def chef_node(state: AgentState):
         step_context = state.get("current_step")
 
     # System Prompt for Context & Tool Routing
+    user_id_str = state.get('user_id')
+    context_instruction = ""
+    if user_id_str:
+        context_instruction = f"""
+    
+    IMPORTANT - USER CONTEXT:
+    - The user's ID is: {user_id_str}
+    - ALWAYS call 'get_user_context' with this ID when the user asks about:
+      * Their pantry, ingredients, or what they have
+      * Their preferences or dietary restrictions
+      * Recipe suggestions based on what's available
+      * Substitutions for missing ingredients
+    - Call this tool FIRST before answering these types of questions.
+    """
+    
     system_msg = SystemMessage(content=f"""
     You are an expert Chef Assistant for the PlateIt App.
     User is at: "{step_context}".
+    {context_instruction}
     
     YOUR JOB:
     1. Answer the user's question based on tool results.
     2. KEEP ANSWERS SHORT (1-2 sentences).
     3. If you find recipes/videos, just say "I found some great options for you!"
     4. NEVER put URLs, thumbnails, or raw tool lists in your text response.
-    5. You are context-aware. If user asks about their pantry or preferences, use 'get_user_context' with the ID: {state.get('user_id')}.
+    5. Be helpful and personalized when you have the user's context.
     """)
     
     # --- Multimodal Message Construction ---
