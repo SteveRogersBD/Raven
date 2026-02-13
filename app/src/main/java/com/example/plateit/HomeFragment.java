@@ -29,6 +29,8 @@ import android.os.AsyncTask;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.plateit.utils.TokenManager;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -38,6 +40,8 @@ public class HomeFragment extends Fragment {
     public HomeFragment() {
         // Required empty public constructor
     }
+
+    private android.widget.TextView tvTokenBalance;
 
     @Nullable
     @Override
@@ -52,6 +56,10 @@ public class HomeFragment extends Fragment {
         ImageView ivPlatform = view.findViewById(R.id.ivPlatform);
         ImageView btnPaste = view.findViewById(R.id.btnPaste);
         ImageView btnScan = view.findViewById(R.id.btnScan);
+
+        // Update Token Balance
+        tvTokenBalance = view.findViewById(R.id.tvTokenBalance);
+        updateTokenDisplay();
 
         // --- 1. Smart Link Detection Logic (Left Icon) ---
         etPasteUrl.addTextChangedListener(new TextWatcher() {
@@ -138,6 +146,18 @@ public class HomeFragment extends Fragment {
         fabChat.setOnClickListener(v -> showChatBottomSheet());
 
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateTokenDisplay();
+    }
+
+    private void updateTokenDisplay() {
+        if (tvTokenBalance != null && getContext() != null) {
+            tvTokenBalance.setText(String.valueOf(TokenManager.getInstance(getContext()).getTokens()));
+        }
     }
 
     private void fetchVideoRecommendations(String userId, VideoAdapter adapter) {
@@ -405,6 +425,9 @@ public class HomeFragment extends Fragment {
             extractRecipe(video.getLink(), video.getThumbnail());
         });
 
+        // Update button text with cost
+        ((android.widget.Button) btnExtract).setText("Extract Recipe (2 🪙)");
+
         btnWatch.setOnClickListener(v -> {
             bottomSheetDialog.dismiss();
             if (video.getLink() != null) {
@@ -422,6 +445,22 @@ public class HomeFragment extends Fragment {
     }
 
     private void extractRecipe(String url, String thumbnailUrl) {
+        int cost = 1; // Default Web Cost
+        if (url.toLowerCase().contains("youtube") || url.toLowerCase().contains("youtu.be")) {
+            cost = 2; // Video Cost
+        }
+
+        TokenManager tokenManager = TokenManager.getInstance(getContext());
+        if (!tokenManager.canAfford(cost)) {
+            android.content.Intent intent = new android.content.Intent(getContext(), PaywallActivity.class);
+            startActivity(intent);
+            return;
+        }
+
+        // Deduct tokens immediately (optimistic UI)
+        tokenManager.useTokens(cost);
+        updateTokenDisplay();
+
         loadingDialog.startLoadingDialog("Extracting Recipe...");
 
         VideoRequest request = new VideoRequest(url);

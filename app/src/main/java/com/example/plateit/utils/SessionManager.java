@@ -83,4 +83,47 @@ public class SessionManager {
     public long getLastPantryFetchTime() {
         return pref != null ? pref.getLong(KEY_LAST_PANTRY_FETCH, 0) : 0;
     }
+
+    // --- Token System ---
+    private static final String KEY_TOKEN_BALANCE = "tokenBalance";
+    private static final String KEY_LAST_TOKEN_RESET = "lastTokenResetTime";
+    private static final String KEY_HAS_USED_FREE_CHAT = "hasUsedFreeChat";
+    private static final String KEY_IS_PRO = "isProCached";
+
+    public void setTokenBalance(int balance) {
+        editor.putInt(KEY_TOKEN_BALANCE, balance);
+        editor.commit();
+    }
+
+    public int getTokenBalance() {
+        // Default to 10 tokens for new users
+        return pref.getInt(KEY_TOKEN_BALANCE, 10);
+    }
+
+    public void setLastTokenResetTime(long timestamp) {
+        editor.putLong(KEY_LAST_TOKEN_RESET, timestamp);
+        editor.commit();
+    }
+
+    public long getLastTokenResetTime() {
+        return pref.getLong(KEY_LAST_TOKEN_RESET, 0);
+    }
+
+    public void setHasUsedFreeChat(boolean used) {
+        editor.putBoolean(KEY_HAS_USED_FREE_CHAT, used);
+        editor.commit();
+    }
+
+    public boolean hasUsedFreeChat() {
+        return pref.getBoolean(KEY_HAS_USED_FREE_CHAT, false);
+    }
+
+    public void setProCached(boolean isPro) {
+        editor.putBoolean(KEY_IS_PRO, isPro);
+        editor.commit();
+    }
+
+    public boolean isProCached() {
+        return pref.getBoolean(KEY_IS_PRO, false);
+    }
 }

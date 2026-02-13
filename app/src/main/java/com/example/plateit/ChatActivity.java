@@ -32,6 +32,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private Uri pendingImageUri = null;
     private String currentThreadId = java.util.UUID.randomUUID().toString();
+    private boolean isPro = false;
 
     private final ActivityResultLauncher<String> galleryLauncher = registerForActivityResult(
             new ActivityResultContracts.GetContent(), uri -> {
@@ -58,6 +59,9 @@ public class ChatActivity extends AppCompatActivity {
         btnAttachImage = findViewById(R.id.btnAttachImage);
         btnSendMessage = findViewById(R.id.btnSendMessage);
 
+        // Check Pro Status
+        refreshProStatus();
+
         // Setup RecyclerView
         messageList = new ArrayList<>();
         // Add a welcome message if list is empty
@@ -79,10 +83,45 @@ public class ChatActivity extends AppCompatActivity {
         btnSendMessage.setOnClickListener(v -> sendMessage());
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshProStatus();
+    }
+
+    private void refreshProStatus() {
+        com.example.plateit.utils.TokenManager.getInstance(this).isPro(pro -> {
+            runOnUiThread(() -> isPro = pro);
+        });
+    }
+
     private void sendMessage() {
         String text = etChatMessage.getText().toString().trim();
         if (text.isEmpty() && pendingImageUri == null) {
             return;
+        }
+
+        // Check Monetization
+        com.example.plateit.utils.SessionManager sessionManager = new com.example.plateit.utils.SessionManager(this);
+
+        // Synchronous check: Trust TokenManager's instant state (Cached + Token
+        // Fallback)
+        if (!isPro && com.example.plateit.utils.TokenManager.getInstance(this).isPro()) {
+            isPro = true;
+        }
+
+        if (!isPro) {
+            if (sessionManager.hasUsedFreeChat()) {
+                android.content.Intent intent = new android.content.Intent(this, PaywallActivity.class);
+                startActivity(intent);
+
+                // Show teaser message
+                messageList.add(new ChatMessage("Upgrade to Pro to act like a Master Chef!", false));
+                chatAdapter.notifyItemInserted(messageList.size() - 1);
+                rvChatMessages.scrollToPosition(messageList.size() - 1);
+                return;
+            }
+            sessionManager.setHasUsedFreeChat(true);
         }
 
         // 1. Create User Message UI
@@ -121,7 +160,7 @@ public class ChatActivity extends AppCompatActivity {
         btnAttachImage.setColorFilter(getColor(R.color.gray_600));
 
         // 5. API Call
-        com.example.plateit.utils.SessionManager sessionManager = new com.example.plateit.utils.SessionManager(this);
+        // SessionManager already instantiated above
         String userId = sessionManager.getUserId();
 
         com.example.plateit.requests.ChatRequest req = new com.example.plateit.requests.ChatRequest(

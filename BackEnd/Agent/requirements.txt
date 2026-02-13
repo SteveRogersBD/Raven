@@ -13,7 +13,7 @@ psycopg2-binary
 langgraph-checkpoint-postgres
 beautifulsoup4
 google-generativeai
-yt-dlp
+yt-dlp>=2025.01.15
 python-multipart
 typing_extensions
 requests

@@ -408,7 +408,28 @@ def download_video_file(url: str, filename: str = "temp_video_recipe.mp4"):
         'no_warnings': False, # Show warnings for debugging
         'js_runtimes': {'node': {}}, # Use node which we confirmed is available
         'nocheckcertificate': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web'],
+                'skip': ['webpage', 'hls']
+            }
+        },
     }
+    
+    # Check for cookies file or environment variable
+    cookies_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
+    
+    # If YOUTUBE_COOKIES env var is provided, write it to a temp file (Cloud Run friendly)
+    if os.getenv("YOUTUBE_COOKIES"):
+        try:
+            with open(cookies_path, "w") as f:
+                f.write(os.getenv("YOUTUBE_COOKIES"))
+        except Exception as e:
+            print(f" -> Error writing cookies.txt from env var: {e}")
+
+    if os.path.exists(cookies_path):
+        ydl_opts['cookiefile'] = cookies_path
+
     
     print(f" -> Attempting download with yt-dlp: {url}")
     try:
@@ -851,8 +872,31 @@ def get_video_metadata(url: str):
         'quiet': True,
         'ignoreerrors': True,
         'no_warnings': True,
-        'extract_flat': 'in_playlist'  # Optimize playlists, just get metadata of video
+        'extract_flat': 'in_playlist',  # Optimize playlists, just get metadata of video
+        'nocheckcertificate': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web'],
+                'skip': ['webpage', 'hls']
+            }
+        },
     }
+    
+    # Check for cookies file or environment variable
+    cookies_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cookies.txt")
+    
+    # If YOUTUBE_COOKIES env var is provided, write it to a temp file
+    if os.getenv("YOUTUBE_COOKIES"):
+        try:
+            with open(cookies_path, "w") as f:
+                f.write(os.getenv("YOUTUBE_COOKIES"))
+        except Exception as e:
+            print(f" -> Error writing cookies.txt from env var: {e}")
+
+    if os.path.exists(cookies_path):
+        ydl_opts['cookiefile'] = cookies_path
+
+
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:

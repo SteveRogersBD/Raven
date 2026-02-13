@@ -38,6 +38,7 @@ import java.util.List;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.example.plateit.utils.TokenManager;
 
 public class PantryFragment extends Fragment {
 
@@ -261,16 +262,30 @@ public class PantryFragment extends Fragment {
     }
 
     private void showAddOptions() {
-        String[] options = { "Type Manually", "Scan with Camera", "Choose from Gallery" };
+        String[] options = { "Type Manually", "Scan with Camera (1 🪙)", "Choose from Gallery (1 🪙)" };
         new AlertDialog.Builder(requireContext())
                 .setTitle("Add Item")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         showManualAddDialog();
-                    } else if (which == 1) {
-                        openCamera();
                     } else {
-                        galleryLauncher.launch("image/*");
+                        // Check Tokens for Vision features
+                        TokenManager tokenManager = TokenManager.getInstance(getContext());
+                        if (!tokenManager.canAfford(1)) {
+                            android.content.Intent intent = new android.content.Intent(getContext(),
+                                    PaywallActivity.class);
+                            startActivity(intent);
+                            return;
+                        }
+
+                        // Deduct and Proceed
+                        tokenManager.useTokens(1);
+
+                        if (which == 1) {
+                            openCamera();
+                        } else {
+                            galleryLauncher.launch("image/*");
+                        }
                     }
                 })
                 .show();

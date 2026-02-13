@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Selected State: Orange Border -->
+    <item android:state_checked="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <stroke android:width="2dp" android:color="#FF6F43" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    
+    <!-- Default State: Light Grey Border -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <stroke android:width="1dp" android:color="#E0E0E0" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</selector>

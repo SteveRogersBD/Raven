@@ -14,6 +14,7 @@
     </queries>
 
     <application
+        android:name=".PlateItApplication"
         android:allowBackup="true"
         android:usesCleartextTraffic="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -75,6 +76,11 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         
+        <activity
+            android:name=".PaywallActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MaterialComponents.Light.NoActionBar" />
+
         <activity
             android:name=".BlogReaderActivity"
             android:exported="false" />
