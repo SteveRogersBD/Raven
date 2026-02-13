@@ -43,6 +43,11 @@ public class DashboardFragment extends Fragment {
     private com.example.plateit.adapters.CookingSessionAdapter sessionAdapter;
     private List<CookbookEntry> myCookbook = new ArrayList<>();
 
+    // Shopping Lists UI
+    private RecyclerView rvShoppingLists;
+    private com.example.plateit.adapters.ShoppingListAdapter shoppingAdapter;
+    private TextView tvEmptyShopping;
+
     // Active Card UI
     private androidx.cardview.widget.CardView cvActiveSession;
     private TextView tvActiveTitle, tvActiveStep;
@@ -111,6 +116,24 @@ public class DashboardFragment extends Fragment {
         tvActiveStep = view.findViewById(R.id.tvActiveStep);
         btnResume = view.findViewById(R.id.btnResume);
 
+        // Shopping Lists Section
+        rvShoppingLists = view.findViewById(R.id.rvShoppingLists);
+        tvEmptyShopping = view.findViewById(R.id.tvEmptyShoppingLists);
+        rvShoppingLists.setLayoutManager(new LinearLayoutManager(getContext()));
+        shoppingAdapter = new com.example.plateit.adapters.ShoppingListAdapter(new ArrayList<>(),
+                new com.example.plateit.adapters.ShoppingListAdapter.OnListClickListener() {
+                    @Override
+                    public void onListClick(com.example.plateit.responses.ShoppingList list) {
+                        openShoppingList(list);
+                    }
+
+                    @Override
+                    public void onListDelete(com.example.plateit.responses.ShoppingList list) {
+                        deleteShoppingList(list);
+                    }
+                });
+        rvShoppingLists.setAdapter(shoppingAdapter);
+
         return view;
     }
 
@@ -121,6 +144,7 @@ public class DashboardFragment extends Fragment {
         fetchActiveSession();
         fetchHistory();
         fetchUserStats();
+        fetchShoppingLists();
         setupChefName(); // Refresh in case it changed
     }
 
@@ -433,5 +457,75 @@ public class DashboardFragment extends Fragment {
         if (getActivity() != null) {
             getActivity().finish();
         }
+    }
+
+    private void fetchShoppingLists() {
+        String userId = sessionManager.getUserId();
+        if (userId == null)
+            return;
+
+        RetrofitClient.getAgentService().getShoppingLists(userId)
+                .enqueue(new Callback<List<com.example.plateit.responses.ShoppingList>>() {
+                    @Override
+                    public void onResponse(Call<List<com.example.plateit.responses.ShoppingList>> call,
+                            Response<List<com.example.plateit.responses.ShoppingList>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            List<com.example.plateit.responses.ShoppingList> lists = response.body();
+                            if (lists.isEmpty()) {
+                                tvEmptyShopping.setVisibility(View.VISIBLE);
+                                rvShoppingLists.setVisibility(View.GONE);
+                            } else {
+                                tvEmptyShopping.setVisibility(View.GONE);
+                                rvShoppingLists.setVisibility(View.VISIBLE);
+                                shoppingAdapter.updateData(lists);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<List<com.example.plateit.responses.ShoppingList>> call, Throwable t) {
+                        // Fail silently or log
+                    }
+                });
+    }
+
+    private void openShoppingList(com.example.plateit.responses.ShoppingList list) {
+        StringBuilder sb = new StringBuilder();
+        for (com.example.plateit.responses.ShoppingListItem item : list.getItems()) {
+            sb.append(item.isBought() ? "☑ " : "☐ ")
+                    .append(item.getName())
+                    .append(" (")
+                    .append(item.getAmount() != null ? item.getAmount() : "1")
+                    .append(")\n");
+        }
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(getContext())
+                .setTitle(list.getTitle())
+                .setMessage(sb.toString())
+                .setPositiveButton("Close", null)
+                .show();
+    }
+
+    private void deleteShoppingList(com.example.plateit.responses.ShoppingList list) {
+        new android.app.AlertDialog.Builder(getContext())
+                .setTitle("Delete List")
+                .setMessage("Remove '" + list.getTitle() + "'?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    RetrofitClient.getAgentService().deleteShoppingList(list.getId()).enqueue(new Callback<Void>() {
+                        @Override
+                        public void onResponse(Call<Void> call, Response<Void> response) {
+                            if (response.isSuccessful()) {
+                                fetchShoppingLists();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<Void> call, Throwable t) {
+                            Toast.makeText(getContext(), "Failed to delete list", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 }

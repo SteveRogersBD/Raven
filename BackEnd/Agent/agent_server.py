@@ -12,14 +12,23 @@ load_dotenv()
 
 from better_agent import workflow as recipe_workflow
 from database import get_session, create_db_and_tables
-from models import User, PantryItem, VideoRecommendation, Cookbook, CookingSession
+from models import User, PantryItem, VideoRecommendation, Cookbook, CookingSession, ShoppingList
+from schemas import ShoppingListCreate, ShoppingListUpdate, ShoppingListItem
 from tools import search_youtube_videos
 import random
 from datetime import datetime, timedelta
 
-app = FastAPI()
+from contextlib import asynccontextmanager
 
-# Keys are loaded from environment variables (Cloud Run or .env file)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Create tables
+    create_db_and_tables()
+    yield
+    # Shutdown logic (if any) could go here
+
+app = FastAPI(lifespan=lifespan)
+
 # os.environ["GOOGLE_API_KEY"] and "GEMINI_API_KEY" should be set in the environment.
 
 # --- Auth Models ---
@@ -406,7 +415,8 @@ def chat_endpoint(request: ChatRequest, session: Session = Depends(get_session))
         "messages": current_msg_list,
         "recipe": recipe_obj,
         "current_step": request.current_step,
-        "image_data": request.image_data
+        "image_data": request.image_data,
+        "user_id": str(request.user_id) if request.user_id else None
     }
     
     # 3. Invoke Chef Agent
@@ -898,6 +908,108 @@ def get_all_cooking_sessions(user_id: uuid.UUID, session: Session = Depends(get_
         .where(CookingSession.user_id == user_id)
         .order_by(CookingSession.id.desc())
     ).all()
+
+# --- Shopping List Endpoints ---
+
+@app.get("/shopping_lists/{user_id}", response_model=List[ShoppingList])
+def get_shopping_lists(user_id: uuid.UUID, session: Session = Depends(get_session)):
+    return session.exec(
+        select(ShoppingList)
+        .where(ShoppingList.user_id == user_id)
+        .order_by(ShoppingList.created_at.desc())
+    ).all()
+
+@app.get("/shopping_list/{list_id}", response_model=ShoppingList)
+def get_shopping_list(list_id: int, session: Session = Depends(get_session)):
+    db_list = session.get(ShoppingList, list_id)
+    if not db_list:
+        raise HTTPException(status_code=404, detail="Shopping List not found")
+    return db_list
+
+@app.post("/shopping_lists/add", response_model=ShoppingList)
+def create_shopping_list(request: ShoppingListCreate, session: Session = Depends(get_session)):
+    new_list = ShoppingList(
+        user_id=request.user_id,
+        title=request.title,
+        items=[item.model_dump() for item in request.items] # Using model_dump() for Pydantic v2
+    )
+    session.add(new_list)
+    session.commit()
+    session.refresh(new_list)
+    return new_list
+
+@app.put("/shopping_lists/{list_id}", response_model=ShoppingList)
+def update_shopping_list(list_id: int, request: ShoppingListUpdate, session: Session = Depends(get_session)):
+    db_list = session.get(ShoppingList, list_id)
+    if not db_list:
+        raise HTTPException(status_code=404, detail="Shopping List not found")
+    
+    if request.title is not None:
+        db_list.title = request.title
+    if request.items is not None:
+        db_list.items = [item.model_dump() for item in request.items]
+    
+    db_list.updated_at = datetime.utcnow()
+    session.add(db_list)
+    session.commit()
+    session.refresh(db_list)
+    return db_list
+
+@app.delete("/shopping_lists/{list_id}")
+def delete_shopping_list(list_id: int, session: Session = Depends(get_session)):
+    db_list = session.get(ShoppingList, list_id)
+    if not db_list:
+        raise HTTPException(status_code=404, detail="Shopping List not found")
+    session.delete(db_list)
+    session.commit()
+    return {"message": "Shopping list deleted"}
+
+# Special endpoint: Automatic Shopping List from Recipe
+@app.post("/shopping_lists/from_recipe")
+def create_shopping_list_from_recipe(request: Dict[str, Any], session: Session = Depends(get_session)):
+    """
+    Compares recipe ingredients with user pantry and creates/returns a shopping list of missing items.
+    """
+    user_id_str = request.get("user_id")
+    if not user_id_str:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    
+    user_id = uuid.UUID(user_id_str)
+    recipe_name = request.get("recipe_name", "Shopping List")
+    recipe_ingredients = request.get("ingredients", [])
+    
+    # 1. Fetch Pantry
+    pantry_items = session.exec(select(PantryItem).where(PantryItem.user_id == user_id)).all()
+    pantry_names = {item.name.lower() for item in pantry_items}
+    
+    # 2. Identify missing
+    missing_items = []
+    for ing in recipe_ingredients:
+        name = ing.get("name", "").lower()
+        if not name: continue
+        
+        # Basic check: if name is not in pantry, it's missing.
+        # Could be improved with partial matching if needed.
+        if name not in pantry_names:
+            missing_items.append({
+                "name": ing.get("name"),
+                "amount": ing.get("amount"),
+                "bought": False
+            })
+    
+    if not missing_items:
+         return {"message": "All ingredients found in pantry!", "list": None}
+
+    # 3. Create List
+    new_list = ShoppingList(
+        user_id=user_id,
+        title=f"🛒 {recipe_name} ingredients",
+        items=missing_items
+    )
+    session.add(new_list)
+    session.commit()
+    session.refresh(new_list)
+    return {"message": "Shopping list created", "list": new_list}
 
 if __name__ == "__main__":
     import uvicorn

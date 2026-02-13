@@ -26,5 +26,5 @@ def get_session():
 def create_db_and_tables():
     """Creates the tables in Supabase if they don't exist"""
     # Import models here so SQLModel knows about them
-    from models import User, PantryItem, Recipe, ChatSession, Message
+    from models import User, PantryItem, Recipe, ChatSession, Message, VideoRecommendation, Cookbook, CookingSession, ShoppingList
     SQLModel.metadata.create_all(engine)

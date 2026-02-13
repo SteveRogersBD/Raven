@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Field
 
@@ -48,3 +49,19 @@ class AgentResponse(BaseModel):
     recipe_data: Optional[RecipeListPayload] = None
     ingredient_data: Optional[IngredientListPayload] = None
     video_data: Optional[VideoListPayload] = None
+
+# --- Shopping List ---
+
+class ShoppingListItem(BaseModel):
+    name: str
+    amount: Optional[str] = None
+    bought: bool = False
+
+class ShoppingListCreate(BaseModel):
+    user_id: uuid.UUID
+    title: str
+    items: List[ShoppingListItem]
+
+class ShoppingListUpdate(BaseModel):
+    title: Optional[str] = None
+    items: Optional[List[ShoppingListItem]] = None

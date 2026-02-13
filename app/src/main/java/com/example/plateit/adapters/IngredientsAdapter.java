@@ -46,6 +46,12 @@ public class IngredientsAdapter extends RecyclerView.Adapter<IngredientsAdapter.
         } else {
             holder.ivImage.setImageResource(android.R.drawable.ic_delete); // NULL URL
         }
+
+        if (ingredient.isMissing()) {
+            holder.tvMissingBadge.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvMissingBadge.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -57,12 +63,14 @@ public class IngredientsAdapter extends RecyclerView.Adapter<IngredientsAdapter.
         ImageView ivImage;
         TextView tvName;
         TextView tvAmount;
+        TextView tvMissingBadge;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             ivImage = itemView.findViewById(R.id.ivIngredient);
             tvName = itemView.findViewById(R.id.tvIngredientName);
             tvAmount = itemView.findViewById(R.id.tvIngredientAmount);
+            tvMissingBadge = itemView.findViewById(R.id.tvMissingBadge);
         }
     }
 }

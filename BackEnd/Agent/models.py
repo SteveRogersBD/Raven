@@ -92,3 +92,13 @@ class CookingSession(SQLModel, table=True):
     current_step_index: int = Field(default=0)
     is_finished: bool = Field(default=False)
     last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+# 9. ShoppingList
+class ShoppingList(SQLModel, table=True):
+    __tablename__ = "shopping_lists"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    title: str
+    items: List[Dict] = Field(default=[], sa_column=Column(JSON)) # List of dicts like {"name": "Eggs", "amount": "12", "bought": false}
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

@@ -9,7 +9,37 @@ from duckduckgo_search import DDGS
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-load_dotenv()
+from sqlmodel import Session, select
+from database import engine
+from models import User, PantryItem
+
+@tool
+def get_user_context(user_id: str):
+    """
+    Fetches personal information about the user, including their name, 
+    culinary preferences, and current pantry inventory.
+    Use this to provide personalized recipe suggestions or substitutions based on what they have.
+    """
+    import uuid
+    try:
+        uid = uuid.UUID(user_id)
+        with Session(engine) as session:
+            # 1. Fetch User Profile
+            user = session.get(User, uid)
+            if not user:
+                return "User not found."
+            
+            # 2. Fetch Pantry
+            pantry = session.exec(select(PantryItem).where(PantryItem.user_id == uid)).all()
+            pantry_list = [f"{p.name} ({p.amount})" for p in pantry]
+            
+            context = f"User Name: {user.full_name or user.username}\n"
+            context += f"Preferences: {', '.join(user.preferences) if user.preferences else 'None set'}\n"
+            context += f"Pantry Items: {', '.join(pantry_list) if pantry_list else 'Empty'}"
+            
+            return context
+    except Exception as e:
+        return f"Error fetching user context: {e}"
 
 @tool
 def pexels_image_search(query: str):

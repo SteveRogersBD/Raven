@@ -1,6 +1,7 @@
 import os
 from typing import Annotated, Literal, TypedDict
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -10,7 +11,8 @@ from tools import (
     search_recipes, search_by_nutrients, find_by_ingredients,
     get_recipe_information, find_similar_recipes, get_random_recipes,
     extract_recipe_from_url, search_ingredients, get_ingredient_information,
-    create_recipe_card, google_search, google_image_search, search_youtube
+    create_recipe_card, google_search, google_image_search, search_youtube,
+    get_user_context
 )
 from schemas import AgentResponse
 from dotenv import load_dotenv
@@ -24,20 +26,23 @@ class AgentState(TypedDict):
     recipe: Recipe | None
     current_step: int
     image_data: str | None # Base64 encoded image
+    user_id: str | None
     
 # --- 2. Setup Tools & Model ---
 tools = [
      search_recipes, search_by_nutrients, find_by_ingredients,
      get_recipe_information, find_similar_recipes, get_random_recipes,
      extract_recipe_from_url, search_ingredients, get_ingredient_information,
-     create_recipe_card, google_search, google_image_search, search_youtube
+     create_recipe_card, google_search, google_image_search, search_youtube,
+     get_user_context
 ]
 
-# The "Chef" model - Switched to GPT-4o for speed
-llm = ChatOpenAI(model="gpt-4o", temperature=0, api_key=os.getenv("OPEN_API_KEY"))
+# The "Chef" model - Powered by Gemini 3 Flash for responsive, multimodal intelligence
+CHEF_MODEL = "gemini-3-flash-preview"
+llm = ChatGoogleGenerativeAI(model=CHEF_MODEL, temperature=0, google_api_key=os.getenv("GEMINI_API_KEY"))
 llm_with_tools = llm.bind_tools(tools)
 
-# The "Waiter" model - Switched to GPT-4o-mini for clean, fast formatting
+# The "Waiter" model - Fast formatting
 REFINER_MODEL = "gpt-4o-mini"
 waiter_llm = ChatOpenAI(model=REFINER_MODEL, temperature=0, api_key=os.getenv("OPEN_API_KEY"))
 response_generator = waiter_llm.with_structured_output(AgentResponse)
@@ -80,6 +85,7 @@ def chef_node(state: AgentState):
     2. KEEP ANSWERS SHORT (1-2 sentences).
     3. If you find recipes/videos, just say "I found some great options for you!"
     4. NEVER put URLs, thumbnails, or raw tool lists in your text response.
+    5. You are context-aware. If user asks about their pantry or preferences, use 'get_user_context' with the ID: {state.get('user_id')}.
     """)
     
     # --- Multimodal Message Construction ---

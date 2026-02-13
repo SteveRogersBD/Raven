@@ -216,6 +216,35 @@
         android:visibility="gone"
         android:layout_marginBottom="20dp"/>
 
+    <!-- Shopping Lists Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Shopping Lists"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/tech_black"
+        android:layout_marginBottom="8dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvShoppingLists"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:nestedScrollingEnabled="false"
+        tools:listitem="@layout/item_shopping_list" />
+
+    <TextView
+        android:id="@+id/tvEmptyShoppingLists"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No shopping lists yet."
+        android:gravity="center"
+        android:textSize="14sp"
+        android:textColor="@color/gray_600"
+        android:visibility="gone"
+        android:layout_marginBottom="20dp"/>
+
     <!-- Recent Sessions Section -->
     <TextView
         android:id="@+id/tvSessionsHeader"

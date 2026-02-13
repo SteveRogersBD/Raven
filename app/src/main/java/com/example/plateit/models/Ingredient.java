@@ -7,6 +7,7 @@ public class Ingredient implements Serializable {
     private String name;
     private String amount;
     private String imageUrl;
+    private boolean isMissing = false;
 
     public Ingredient(String name, String amount, String imageUrl) {
         this.name = name;
@@ -24,5 +25,13 @@ public class Ingredient implements Serializable {
 
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public boolean isMissing() {
+        return isMissing;
+    }
+
+    public void setMissing(boolean missing) {
+        isMissing = missing;
     }
 }

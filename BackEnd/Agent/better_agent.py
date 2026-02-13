@@ -25,7 +25,7 @@ from tools import (
     get_video_metadata
 )
 
-# ... (omitting lines 25-381 same as original until enrich_ingredients)
+
 
 
 
@@ -34,20 +34,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- MODEL CONFIGURATION ---
-# Orchestrator: High intelligence, high reasoning (GPT-5.2 or fallback to GPT-4o)
-# Worker: Fast, efficient, formatting (GPT-4o or GPT-4o-mini)
+# Orchestrator: Google Gemini 3 (Native multimodal & high reasoning)
+# Worker: Fast, efficient (GPT-4o or fallback)
 # Vision/Video: Gemini 3 (Native multimodal)
 
-ORCHESTRATOR_MODEL = "gpt-5.2" 
+ORCHESTRATOR_MODEL = "gemini-3-flash-preview" 
 WORKER_MODEL = "gpt-4o" 
 REFINER_MODEL = "gpt-4o-mini"
 
 # Initialize LLMs
 try:
-    # Main Brain (Orchestrator)
-    orchestrator_llm = ChatOpenAI(model=ORCHESTRATOR_MODEL, api_key=os.getenv("OPEN_API_KEY"))
+    # Main Brain (Orchestrator) - Using Gemini 3 as the heart of PlateIt
+    orchestrator_llm = ChatGoogleGenerativeAI(model=ORCHESTRATOR_MODEL, google_api_key=os.getenv("GEMINI_API_KEY"))
 except Exception as e:
-    print(f"Warning: Could not init {ORCHESTRATOR_MODEL}, falling back to gpt-4o. Error: {e}")
+    print(f"Warning: Could not init {ORCHESTRATOR_MODEL}. Error: {e}")
+    # Fallback to GPT-4o if Gemini fails
     orchestrator_llm = ChatOpenAI(model="gpt-4o", api_key=os.getenv("OPEN_API_KEY"))
 
 try:

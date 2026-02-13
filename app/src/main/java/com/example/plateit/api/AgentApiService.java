@@ -99,4 +99,29 @@ public interface AgentApiService {
         @retrofit2.http.GET("users/profile/{user_id}")
         retrofit2.Call<com.example.plateit.responses.AuthResponse> getUserProfile(
                         @retrofit2.http.Path("user_id") String userId);
+
+        // --- Shopping List ---
+        @retrofit2.http.GET("shopping_lists/{user_id}")
+        retrofit2.Call<java.util.List<com.example.plateit.responses.ShoppingList>> getShoppingLists(
+                        @retrofit2.http.Path("user_id") String userId);
+
+        @retrofit2.http.GET("shopping_list/{list_id}")
+        retrofit2.Call<com.example.plateit.responses.ShoppingList> getShoppingList(
+                        @retrofit2.http.Path("list_id") int listId);
+
+        @retrofit2.http.POST("shopping_lists/add")
+        retrofit2.Call<com.example.plateit.responses.ShoppingList> createShoppingList(
+                        @retrofit2.http.Body com.example.plateit.requests.ShoppingListCreateRequest request);
+
+        @retrofit2.http.PUT("shopping_lists/{list_id}")
+        retrofit2.Call<com.example.plateit.responses.ShoppingList> updateShoppingList(
+                        @retrofit2.http.Path("list_id") int listId,
+                        @retrofit2.http.Body com.example.plateit.requests.ShoppingListUpdate request);
+
+        @retrofit2.http.DELETE("shopping_lists/{list_id}")
+        retrofit2.Call<Void> deleteShoppingList(@retrofit2.http.Path("list_id") int listId);
+
+        @retrofit2.http.POST("shopping_lists/from_recipe")
+        retrofit2.Call<com.example.plateit.responses.ShoppingListFromRecipeResponse> createShoppingListFromRecipe(
+                        @retrofit2.http.Body java.util.Map<String, Object> request);
 }

@@ -9,8 +9,7 @@ public class RecipeActivity extends AppCompatActivity {
 
     private TextView ingredientsTextView;
     private TextView stepsTextView;
-    // private TextView ingredientsTextView; // Removed
-    // private TextView stepsTextView; // Removed
+    private com.example.plateit.responses.ShoppingList currentShoppingList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -199,11 +198,158 @@ public class RecipeActivity extends AppCompatActivity {
             com.example.plateit.adapters.StepsAdapter stepsAdapter = new com.example.plateit.adapters.StepsAdapter(
                     recipe.getSteps());
             rvSteps.setAdapter(stepsAdapter);
+
+            // Added: check pantry and highlight
+            checkPantryAndHighlightIngredients(recipe, ingredientsAdapter);
+
+            // Added: Shopping List Button Logic
+            android.widget.Button btnShopping = findViewById(R.id.btnCreateShoppingList);
+            btnShopping.setOnClickListener(v -> {
+                if (currentShoppingList == null) {
+                    createShoppingList(finalRecipe);
+                } else {
+                    viewAndEditShoppingList();
+                }
+            });
+
         } else {
             android.util.Log.e("PlateIt", "RecipeActivity: Recipe is NULL!");
             android.widget.Toast.makeText(this, "Error: Could not load recipe data", android.widget.Toast.LENGTH_LONG)
                     .show();
             finish();
         }
+    }
+
+    private void checkPantryAndHighlightIngredients(com.example.plateit.responses.RecipeResponse recipe,
+            com.example.plateit.adapters.IngredientsAdapter adapter) {
+        String userId = new com.example.plateit.utils.SessionManager(this).getUserId();
+        if (userId == null)
+            return;
+
+        com.example.plateit.api.RetrofitClient.getAgentService().getPantryItems(userId)
+                .enqueue(new retrofit2.Callback<java.util.List<com.example.plateit.db.PantryItem>>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<java.util.List<com.example.plateit.db.PantryItem>> call,
+                            retrofit2.Response<java.util.List<com.example.plateit.db.PantryItem>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            java.util.Set<String> pantryNames = new java.util.HashSet<>();
+                            for (com.example.plateit.db.PantryItem item : response.body()) {
+                                pantryNames.add(item.name.toLowerCase().trim());
+                            }
+
+                            for (com.example.plateit.models.Ingredient ing : recipe.getIngredients()) {
+                                if (!pantryNames.contains(ing.getName().toLowerCase().trim())) {
+                                    ing.setMissing(true);
+                                }
+                            }
+                            adapter.notifyDataSetChanged();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<java.util.List<com.example.plateit.db.PantryItem>> call,
+                            Throwable t) {
+                        android.util.Log.e("PlateIt", "Pantry check failed", t);
+                    }
+                });
+    }
+
+    private void createShoppingList(com.example.plateit.responses.RecipeResponse recipe) {
+        if (recipe == null)
+            return;
+        String userId = new com.example.plateit.utils.SessionManager(this).getUserId();
+        if (userId == null) {
+            android.widget.Toast.makeText(this, "Please log in first", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        android.widget.Button btn = findViewById(R.id.btnCreateShoppingList);
+        btn.setEnabled(false);
+        btn.setText("Creating...");
+
+        java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("user_id", userId);
+        requestBody.put("recipe_name", recipe.getName());
+        requestBody.put("ingredients", recipe.getIngredients());
+
+        com.example.plateit.api.RetrofitClient.getAgentService().createShoppingListFromRecipe(requestBody)
+                .enqueue(new retrofit2.Callback<com.example.plateit.responses.ShoppingListFromRecipeResponse>() {
+                    @Override
+                    public void onResponse(
+                            retrofit2.Call<com.example.plateit.responses.ShoppingListFromRecipeResponse> call,
+                            retrofit2.Response<com.example.plateit.responses.ShoppingListFromRecipeResponse> response) {
+                        btn.setEnabled(true);
+                        if (response.isSuccessful() && response.body() != null) {
+                            currentShoppingList = response.body().getList();
+                            btn.setText("View Shopping List");
+                            android.widget.Toast.makeText(RecipeActivity.this, response.body().getMessage(),
+                                    android.widget.Toast.LENGTH_LONG).show();
+                        } else {
+                            btn.setText("Create Shopping List");
+                            android.widget.Toast.makeText(RecipeActivity.this, "Failed: " + response.message(),
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(
+                            retrofit2.Call<com.example.plateit.responses.ShoppingListFromRecipeResponse> call,
+                            Throwable t) {
+                        btn.setEnabled(true);
+                        btn.setText("Create Shopping List");
+                        android.widget.Toast.makeText(RecipeActivity.this, "Error: " + t.getMessage(),
+                                android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                });
+    }
+
+    private void viewAndEditShoppingList() {
+        if (currentShoppingList == null)
+            return;
+
+        android.view.View dialogView = getLayoutInflater().inflate(R.layout.dialog_edit_shopping_list, null);
+        androidx.recyclerview.widget.RecyclerView rvItems = dialogView.findViewById(R.id.rvEditShoppingItems);
+        rvItems.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
+
+        com.example.plateit.adapters.ShoppingItemsEditAdapter editAdapter = new com.example.plateit.adapters.ShoppingItemsEditAdapter(
+                currentShoppingList.getItems());
+        rvItems.setAdapter(editAdapter);
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Edit Shopping List")
+                .setView(dialogView)
+                .setPositiveButton("Save", (dialog, which) -> {
+                    updateShoppingListOnServer();
+                })
+                .setNegativeButton("Close", null)
+                .show();
+    }
+
+    private void updateShoppingListOnServer() {
+        if (currentShoppingList == null)
+            return;
+
+        com.example.plateit.requests.ShoppingListUpdate update = new com.example.plateit.requests.ShoppingListUpdate(
+                currentShoppingList.getTitle(),
+                currentShoppingList.getItems());
+
+        com.example.plateit.api.RetrofitClient.getAgentService().updateShoppingList(currentShoppingList.getId(), update)
+                .enqueue(new retrofit2.Callback<com.example.plateit.responses.ShoppingList>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.plateit.responses.ShoppingList> call,
+                            retrofit2.Response<com.example.plateit.responses.ShoppingList> response) {
+                        if (response.isSuccessful()) {
+                            android.widget.Toast.makeText(RecipeActivity.this, "Shopping list updated!",
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.plateit.responses.ShoppingList> call,
+                            Throwable t) {
+                        android.widget.Toast.makeText(RecipeActivity.this, "Failed to update: " + t.getMessage(),
+                                android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 }
